@@ -56,8 +56,17 @@ on:
         type: string
 
 jobs:
+  setup-mono:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Mono
+        run: |
+          sudo apt update
+          sudo apt install -y mono-complete
+
   nuget-installer:
     runs-on: ubuntu-latest
+    needs: setup-mono
     steps:
       - name: Install NuGet Tool
         run: |
@@ -69,14 +78,14 @@ jobs:
 
   nuget-restore:
     runs-on: ubuntu-latest
-    needs: nuget-installer
+    needs: [setup-mono, nuget-installer]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
       - name: NuGet Restore
         run: |
-          mono ${{ inputs.nuGetPath }}/nuget.exe restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }} \
+          mono ${{ inputs.nuGetPath }}/nuget.exe restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }}  
           -Verbosity ${{ inputs.verbosity }} ${{ inputs.nuGetRestoreArgs }}
 
   nuget-pack:
@@ -85,8 +94,8 @@ jobs:
     steps:
       - name: NuGet Packager
         run: |
-          mono ${{ inputs.nuGetPath }}/nuget.exe pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }} \
-          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }} \
+          mono ${{ inputs.nuGetPath }}/nuget.exe pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }}  
+          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }}  
           ${{ inputs.nuGetAdditionalArgs }}
 
   nuget-publish:
@@ -95,5 +104,5 @@ jobs:
     steps:
       - name: NuGet Publisher
         run: |
-          mono ${{ inputs.nuGetPath }}/nuget.exe push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }} \
+          mono ${{ inputs.nuGetPath }}/nuget.exe push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }}  
           ${{ inputs.nuGetAdditionalArgs }}
