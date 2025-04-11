@@ -63,7 +63,7 @@ jobs:
         run: |
           curl -o nuget.exe https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe
           mkdir -p ${{ inputs.nuGetPath }}
-          mv nuget.exe ${{ inputs.nuGetPath }}
+          mv nuget.exe ${{ inputs.nuGetPath }}/nuget.exe
         env:
           nuGetVersion: ${{ inputs.nuGetVersion }}
 
@@ -76,7 +76,7 @@ jobs:
 
       - name: NuGet Restore
         run: |
-          ${{ inputs.nuGetPath }}/nuget restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }}   
+          mono ${{ inputs.nuGetPath }}/nuget.exe restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }} \
           -Verbosity ${{ inputs.verbosity }} ${{ inputs.nuGetRestoreArgs }}
 
   nuget-pack:
@@ -85,8 +85,8 @@ jobs:
     steps:
       - name: NuGet Packager
         run: |
-          ${{ inputs.nuGetPath }}/nuget pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }}   
-          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }}   
+          mono ${{ inputs.nuGetPath }}/nuget.exe pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }} \
+          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }} \
           ${{ inputs.nuGetAdditionalArgs }}
 
   nuget-publish:
@@ -95,5 +95,5 @@ jobs:
     steps:
       - name: NuGet Publisher
         run: |
-          ${{ inputs.nuGetPath }}/nuget push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }}   
+          mono ${{ inputs.nuGetPath }}/nuget.exe push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }} \
           ${{ inputs.nuGetAdditionalArgs }}
