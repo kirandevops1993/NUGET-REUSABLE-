@@ -33,22 +33,10 @@ on:
       outputdir:
         required: true
         type: string
-      includeReferencedProjects:
-        required: true
-        type: string
       versionByBuild:
         required: true
         type: boolean
       versionEnvVar:
-        required: true
-        type: string
-      requestedMajorVersion:
-        required: true
-        type: string
-      requestedMinorVersion:
-        required: true
-        type: string
-      requestedPatchVersion:
         required: true
         type: string
       configurationToPack:
@@ -63,13 +51,7 @@ on:
       nuGetFeedType:
         required: true
         type: string
-      connectedServiceName:
-        required: true
-        type: string
       feedName:
-        required: true
-        type: string
-      continueOnEmptyNupkgMatch:
         required: true
         type: string
 
@@ -78,7 +60,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Install NuGet Tool
-        run: | 
+        run: |
           curl -o nuget.exe https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe
           mkdir -p ${{ inputs.nuGetPath }}
           mv nuget.exe ${{ inputs.nuGetPath }}
@@ -94,7 +76,7 @@ jobs:
 
       - name: NuGet Restore
         run: |
-          ${{ inputs.nuGetPath }}/nuget restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }}  
+          ${{ inputs.nuGetPath }}/nuget restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }}   
           -Verbosity ${{ inputs.verbosity }} ${{ inputs.nuGetRestoreArgs }}
 
   nuget-pack:
@@ -103,8 +85,8 @@ jobs:
     steps:
       - name: NuGet Packager
         run: |
-          ${{ inputs.nuGetPath }}/nuget pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }}  
-          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }}  
+          ${{ inputs.nuGetPath }}/nuget pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }}   
+          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }}   
           ${{ inputs.nuGetAdditionalArgs }}
 
   nuget-publish:
@@ -113,5 +95,5 @@ jobs:
     steps:
       - name: NuGet Publisher
         run: |
-          ${{ inputs.nuGetPath }}/nuget push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }}  
-          -ApiKey ${{ inputs. connectedServiceName }} ${{ inputs.nuGetAdditionalArgs }}
+          ${{ inputs.nuGetPath }}/nuget push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }}   
+          ${{ inputs.nuGetAdditionalArgs }}
