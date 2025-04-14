@@ -45,4 +45,74 @@ on:
         required: true
         type: boolean
       versionEnvVar:
-       
+        required: true
+        type: string
+      majorVersion:
+        required: true
+        type: number
+      minorVersion:
+        required: true
+        type: number
+      patchVersion:
+        required: true
+        type: number
+      configurationToPack:
+        required: true
+        type: string
+      buildProperties:
+        required: true
+        type: string
+      nuGetAdditionalArgs:
+        required: true
+        type: string
+
+      # Publisher
+      nuGetFeedType:
+        required: true
+        type: string
+      apiKey:
+        required: true
+        type: string
+      feedName:
+        required: true
+        type: string
+      skipDuplicate:
+        required: true
+        type: boolean
+
+jobs:
+  nuget-tasks:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Download NuGet CLI
+        run: |
+          Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/v6.13.2/nuget.exe -OutFile nuget.exe
+
+      - name: Restore NuGet Packages
+        run: |
+          .\nuget.exe restore "${{ inputs.solution }}" `
+            -ConfigFile "${{ inputs.nugetConfigPath }}" `
+            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
+            -Verbosity ${{ inputs.verbosity }} `
+            -NonInteractive
+
+      - name: Pack NuGet Packages
+        run: |
+          .\nuget.exe pack "${{ inputs.searchPattern }}" `
+            -OutputDirectory "${{ inputs.outputdir }}" `
+            -Symbols ${{ inputs.includeSymbols }} `
+            -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+            -Properties "${{ inputs.buildProperties }}" `
+            ${{ inputs.nuGetAdditionalArgs }}
+
+      - name: Push NuGet Packages
+        run: |
+          .\nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
+            -Source "${{ inputs.feedName }}" `
+            -ApiKey "${{ inputs.apiKey }}" `
+            -SkipDuplicate ${{ inputs.skipDuplicate }} `
+            -Verbosity ${{ inputs.verbosity }} `
+            ${{ inputs.nuGetAdditionalArgs }}
