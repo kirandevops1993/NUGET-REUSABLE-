@@ -38,7 +38,7 @@ on:
       outputdir:
         required: true
         type: string
-      Sensitive_Alphanumeric_Info_1:
+      includeSymbols:
         required: true
         type: boolean
       versionByBuild:
@@ -47,13 +47,13 @@ on:
       versionEnvVar:
         required: true
         type: string
-      Sensitive_Alphanumeric_Info_2:
+      majorVersion:
         required: true
         type: number
-      Sensitive_Alphanumeric_Info_3:
+      minorVersion:
         required: true
         type: number
-      Sensitive_Alphanumeric_Info_4:
+      patchVersion:
         required: true
         type: number
       configurationToPack:
@@ -70,13 +70,13 @@ on:
       nuGetFeedType:
         required: true
         type: string
-      Sensitive_Alphanumeric_Info_5:
+      apiKey:
         required: true
         type: string
       feedName:
         required: true
         type: string
-      Sensitive_Alphanumeric_Info_6:
+      skipDuplicate:
         required: true
         type: boolean
 
@@ -104,8 +104,8 @@ jobs:
         run: |
           .\nuget.exe pack "${{ inputs.searchPattern }}" `
             -OutputDirectory "${{ inputs.outputdir }}" `
-            - Sensitive_Alphanumeric_Info_7 ${{ inputs. Sensitive_Alphanumeric_Info_1 }} `
-            -Version "${{ inputs. Sensitive_Alphanumeric_Info_2 }}.${{ inputs. Sensitive_Alphanumeric_Info_3 }}.${{ inputs. Sensitive_Alphanumeric_Info_4 }}" `
+            -Symbols ${{ inputs.includeSymbols }} `
+            -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
             -Properties "${{ inputs.buildProperties }}" `
             ${{ inputs.nuGetAdditionalArgs }}
 
@@ -113,6 +113,7 @@ jobs:
         run: |
           .\nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -NonInteractive `
+            -ApiKey "${{ inputs.apiKey }}" `
+            -SkipDuplicate ${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
