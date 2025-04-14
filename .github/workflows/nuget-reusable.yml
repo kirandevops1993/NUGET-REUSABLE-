@@ -3,6 +3,7 @@ name: Reusable NuGet Workflow
 on:
   workflow_call:
     inputs:
+      # Restore Inputs
       solution:
         required: true
         type: string
@@ -31,6 +32,7 @@ on:
         required: true
         type: string
 
+      # Packager Inputs
       searchPattern:
         required: true
         type: string
@@ -65,10 +67,8 @@ on:
         required: true
         type: string
 
+      # Publisher Inputs
       nuGetFeedType:
-        required: true
-        type: string
-      apiKey:
         required: true
         type: string
       feedName:
@@ -77,6 +77,10 @@ on:
       skipDuplicate:
         required: true
         type: boolean
+
+    secrets:
+      apiKey:
+        required: true
 
 jobs:
   nuget-tasks:
@@ -116,7 +120,7 @@ jobs:
           & $msbuildPath `
             "${{ inputs.searchPattern }}" `
             /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:Platform="Any CPU" `
+            /p:${{ inputs.buildProperties }} `
             /verbosity:${{ inputs.verbosity }}
         shell: powershell
 
@@ -137,7 +141,7 @@ jobs:
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ inputs.apiKey }}" `
+            -ApiKey "${{ secrets.apiKey }}" `
             -SkipDuplicate ${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
