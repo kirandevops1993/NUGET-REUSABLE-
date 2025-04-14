@@ -1,148 +1,46 @@
-name: Reusable NuGet Workflow
+name: Reusable Build and Push NuGet Package
 
 on:
   workflow_call:
     inputs:
-      # Restore Inputs
-      solution:
-        required: true
-        type: string
-      nugetConfigPath:
-        required: true
-        type: string
-      packagesDirectory:
-        required: true
-        type: string
-      verbosity:
-        required: true
-        type: string
-      nuGetRestoreArgs:
-        required: true
-        type: string
-      restoreMode:
-        required: true
-        type: string
-      noCache:
-        required: true
-        type: boolean
-      nuGetVersion:
-        required: true
-        type: string
-      nuGetPath:
-        required: true
-        type: string
-
-      # Packager Inputs
-      searchPattern:
+      projectPath:
         required: true
         type: string
       outputdir:
         required: true
         type: string
-      includeSymbols:
-        required: true
-        type: boolean
-      versionByBuild:
-        required: true
-        type: boolean
-      versionEnvVar:
-        required: true
-        type: string
-      majorVersion:
-        required: true
-        type: number
-      minorVersion:
-        required: true
-        type: number
-      patchVersion:
-        required: true
-        type: number
-      configurationToPack:
-        required: true
-        type: string
-      buildProperties:
-        required: true
-        type: string
-      nuGetAdditionalArgs:
-        required: true
-        type: string
-
-      # Publisher Inputs
-      nuGetFeedType:
-        required: true
-        type: string
       feedName:
         required: true
         type: string
-      skipDuplicate:
-        required: true
-        type: boolean
-
     secrets:
       apiKey:
         required: true
 
 jobs:
-  nuget-tasks:
+  build:
     runs-on: windows-latest
+
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - name: Download NuGet CLI
-        run: |
-          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/v6.13.2/nuget.exe -OutFile nuget.exe
+      - name: Setup NuGet CLI
+        uses: nuget/setup-nuget@v1
+
+      - name: Restore Dependencies
+        run: nuget restore "${{ inputs.projectPath }}"
+
+      - name: Build Project
+        run: msbuild "${{ inputs.projectPath }}" /p:Configuration=Release
+
+      - name: Pack Project
+        run: nuget pack "${{ inputs.projectPath }}" -OutputDirectory "${{ inputs.outputdir }}"
+
+      - name: Push to Azure Artifacts
         shell: powershell
-
-      - name: Restore NuGet Packages
-        run: |
-          ./nuget.exe restore "${{ inputs.solution }}" `
-            -ConfigFile "${{ inputs.nugetConfigPath }}" `
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
-            -Verbosity ${{ inputs.verbosity }} `
-            -NonInteractive
-        shell: powershell
-
-      - name: Locate MSBuild Path
-        id: msbuild-path
-        run: |
-          $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
-          if (!(Test-Path $msbuildPath)) {
-            Write-Error "MSBuild.exe not found at $msbuildPath"
-            exit 1
-          }
-          echo "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
-        shell: powershell
-
-      - name: Build the Project
-        run: |
-          $msbuildPath = "${{ steps.msbuild-path.outputs.msbuildPath }}"
-          & $msbuildPath `
-            "${{ inputs.searchPattern }}" `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:${{ inputs.buildProperties }} `
-            /verbosity:${{ inputs.verbosity }}
-        shell: powershell
-
-      - name: Pack NuGet Packages using MSBuild
-        run: |
-          $msbuildPath = "${{ steps.msbuild-path.outputs.msbuildPath }}"
-          & $msbuildPath `
-            "${{ inputs.searchPattern }}" `
-            /t:Pack `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:PackageOutputPath="${{ inputs.outputdir }}" `
-            /p:IncludeSymbols=${{ inputs.includeSymbols }} `
-            /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-            /p:${{ inputs.buildProperties }}
-        shell: powershell
-
-      - name: Push NuGet Packages
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.apiKey }}
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.apiKey }}" `
-            -SkipDuplicate ${{ inputs.skipDuplicate }} `
-            -Verbosity ${{ inputs.verbosity }} `
-            ${{ inputs.nuGetAdditionalArgs }}
-        shell: powershell
+            -ApiKey "AzureDevOps"
