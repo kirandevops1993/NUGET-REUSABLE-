@@ -103,27 +103,28 @@ jobs:
 
       - name: Build the Project
         run: |
-          "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" "${{ inputs.searchPattern }}" `
-            -p:Configuration=${{ inputs.configurationToPack }} `
-            -p:Platform="Any CPU" `
-            -Verbosity:${{ inputs.verbosity }}
+          & "C:\Program Files (x86)\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe" `
+            "${{ inputs.searchPattern }}" `
+            /p:Configuration=${{ inputs.configurationToPack }} `
+            /p:Platform="Any CPU" `
+            /verbosity:${{ inputs.verbosity }}
         shell: powershell
 
       - name: Pack NuGet Packages
         run: |
-          if (${{ inputs.includeSymbols }}) {    
+          if (${{ inputs.includeSymbols }}) {
             ./nuget.exe pack "${{ inputs.searchPattern }}" `
               -OutputDirectory "${{ inputs.outputdir }}" `
               -Symbols `
               -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
               -Properties "${{ inputs.buildProperties }}" `
-              ${{ inputs.nuGetAdditionalArgs }}   
-          } else {    
+              ${{ inputs.nuGetAdditionalArgs }}
+          } else {
             ./nuget.exe pack "${{ inputs.searchPattern }}" `
               -OutputDirectory "${{ inputs.outputdir }}" `
               -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
               -Properties "${{ inputs.buildProperties }}" `
-              ${{ inputs.nuGetAdditionalArgs }}   
+              ${{ inputs.nuGetAdditionalArgs }}
           }
         shell: powershell
 
