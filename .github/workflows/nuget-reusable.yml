@@ -6,45 +6,13 @@ on:
       solution:
         required: true
         type: string
-      nugetConfigPath:
-        required: true
-        type: string
-      packagesDirectory:
-        required: true
-        type: string
-      verbosity:
-        required: true
-        type: string
-      nuGetRestoreArgs:
-        required: true
-        type: string
-      restoreMode:
-        required: true
-        type: string
-      noCache:
-        required: true
-        type: boolean
-      nuGetVersion:
-        required: true
-        type: string
-      nuGetPath:
-        required: true
-        type: string
-
-      # Packager
       searchPattern:
         required: true
         type: string
-      outputdir:
+      configurationToPack:
         required: true
         type: string
-      includeSymbols:
-        required: true
-        type: boolean
-      versionByBuild:
-        required: true
-        type: boolean
-      versionEnvVar:
+      outputdir:
         required: true
         type: string
       majorVersion:
@@ -56,105 +24,64 @@ on:
       patchVersion:
         required: true
         type: number
-      configurationToPack:
-        required: true
-        type: string
-      buildProperties:
-        required: true
-        type: string
-      nuGetAdditionalArgs:
-        required: true
-        type: string
-
-      # Publisher
-      nuGetFeedType:
-        required: true
-        type: string
       apiKey:
         required: true
         type: string
       feedName:
         required: true
         type: string
-      skipDuplicate:
-        required: true
-        type: boolean
 
 jobs:
   nuget-tasks:
     runs-on: windows-latest
     steps:
-      - name: Checkout source
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Download NuGet CLI
         run: |
-          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe -OutFile nuget.exe
+          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
         shell: powershell
 
-      - name: Restore NuGet Packages
-        run: |
-          ./nuget.exe restore "${{ inputs.solution }}" `
-            -ConfigFile "${{ inputs.nugetConfigPath }}" `
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
-            -Verbosity ${{ inputs.verbosity }} `
-            -NonInteractive
+      - name: Restore Packages
+        run: ./nuget.exe restore "${{ inputs.solution }}"
         shell: powershell
 
-      - name: Locate MSBuild Path
-        id: msbuild-path
+      - name: Setup MSBuild Path
+        id: msbuild
         run: |
-          $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (!(Test-Path $vswherePath)) {
-            Write-Error "vswhere.exe not found at $vswherePath"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (!(Test-Path $vswhere)) {
+            Write-Error "vswhere.exe not found"
             exit 1
           }
-          $msbuildPath = & $vswherePath `
-            -latest `
-            -products * `
-            -requires Microsoft.Component.MSBuild `
-            -find MSBuild\**\Bin\MSBuild.exe
-          if (!$msbuildPath) {
-            Write-Error "MSBuild.exe not found"
+          $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe
+          if (!$msbuild) {
+            Write-Error "MSBuild not found"
             exit 1
           }
-          Write-Output "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
+          echo "msbuild=$msbuild" >> $env:GITHUB_OUTPUT
         shell: powershell
 
-      - name: Build the Project
+      - name: Build Project
         run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
+          & "${{ steps.msbuild.outputs.msbuild }}" `
             "${{ inputs.searchPattern }}" `
             /t:Rebuild `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:Platform="Any CPU" `
-            /verbosity:${{ inputs.verbosity }}
+            /p:Configuration=${{ inputs.configurationToPack }}
         shell: powershell
 
-      - name: Pack NuGet Packages
+      - name: NuGet Pack
         run: |
-          if (${{ inputs.includeSymbols }}) {
-            ./nuget.exe pack "${{ inputs.searchPattern }}" `
-              -OutputDirectory "${{ inputs.outputdir }}" `
-              -Symbols `
-              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-              -Properties "${{ inputs.buildProperties }}" `
-              ${{ inputs.nuGetAdditionalArgs }}
-          } else {
-            ./nuget.exe pack "${{ inputs.searchPattern }}" `
-              -OutputDirectory "${{ inputs.outputdir }}" `
-              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-              -Properties "${{ inputs.buildProperties }}" `
-              ${{ inputs.nuGetAdditionalArgs }}
-          }
+          ./nuget.exe pack "${{ inputs.searchPattern }}" `
+            -OutputDirectory "${{ inputs.outputdir }}" `
+            -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}"
         shell: powershell
 
-      - name: Push NuGet Packages
+      - name: NuGet Push
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
-            -Source "${{ inputs.feedName }}" `
             -ApiKey "${{ inputs.apiKey }}" `
-            -SkipDuplicate:${{ inputs.skipDuplicate }} `
-            -Verbosity ${{ inputs.verbosity }} `
-            ${{ inputs.nuGetAdditionalArgs }}
+            -Source "${{ inputs.feedName }}" `
+            -SkipDuplicate
         shell: powershell
