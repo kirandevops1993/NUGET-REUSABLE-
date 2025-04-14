@@ -101,12 +101,20 @@ jobs:
 
       - name: Pack NuGet Packages
         run: |
-          .nuget.exe pack "${{ inputs.searchPattern }}" `
-            -OutputDirectory "${{ inputs.outputdir }}" `
-            ${{ inputs.includeSymbols && '-Symbols' '' }} `
-            -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-            -Properties "${{ inputs.buildProperties }}" `
-            ${{ inputs.nuGetAdditionalArgs }}
+          if (${{ inputs.includeSymbols }}) {
+            .nuget.exe pack "${{ inputs.searchPattern }}" `
+              -OutputDirectory "${{ inputs.outputdir }}" `
+              -Symbols `
+              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+              -Properties "${{ inputs.buildProperties }}" `
+              ${{ inputs.nuGetAdditionalArgs }}
+          } else {
+            .nuget.exe pack "${{ inputs.searchPattern }}" `
+              -OutputDirectory "${{ inputs.outputdir }}" `
+              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+              -Properties "${{ inputs.buildProperties }}" `
+              ${{ inputs.nuGetAdditionalArgs }}
+          }
 
       - name: Push NuGet Packages
         run: |
