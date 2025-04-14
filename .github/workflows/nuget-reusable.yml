@@ -3,79 +3,121 @@ name: NuGet Reusable Workflow
 on:
   workflow_call:
     inputs:
-      # NuGetToolInstaller
-      solution: { required: true, type: string }
-      nugetConfigPath: { required: true, type: string }
-      restoreMode: { required: false, type: string }
-      noCache: { required: false, type: boolean }
-      nuGetRestoreArgs: { required: false, type: string }
-      verbosity: { required: true, type: string }
-      nuGetVersion: { required: false, type: string }
-      nuGetPath: { required: false, type: string }
+      solution:
+        required: true
+        type: string
+      nugetConfigPath:
+        required: true
+        type: string
+      restoreMode:
+        required: true
+        type: string
+      noCache:
+        required: true
+        type: boolean
+      nuGetRestoreArgs:
+        required: true
+        type: string
+      verbosity:
+        required: true
+        type: string
+      nuGetVersion:
+        required: true
+        type: string
+      nuGetPath:
+        required: true
+        type: string
 
-      # NuGet Restore
-      selectorConfig: { required: false, type: string }
-      feed: { required: false, type: string }
-      includeNuGetOrg: { required: false, type: boolean }
-      packagesDirectory: { required: false, type: string }
+      selectorConfig:
+        required: true
+        type: string
+      feed:
+        required: true
+        type: string
+      includeNuGetOrg:
+        required: true
+        type: boolean
+      packagesDirectory:
+        required: true
+        type: string
 
-      # NuGet Packager
-      searchPattern: { required: true, type: string }
-      outputdir: { required: true, type: string }
-      includeReferencedProjects: { required: false, type: boolean }
-      versionByBuild: { required: false, type: boolean }
-      versionEnvVar: { required: false, type: string }
-      requestedMajorVersion: { required: false, type: string }
-      requestedMinorVersion: { required: false, type: string }
-      requestedPatchVersion: { required: false, type: string }
-      configurationToPack: { required: false, type: string }
-      buildProperties: { required: false, type: string }
-      nuGetAdditionalArgs: { required: false, type: string }
+      searchPattern:
+        required: true
+        type: string
+      outputdir:
+        required: true
+        type: string
+      includeReferencedProjects:
+        required: true
+        type: boolean
+      versionByBuild:
+        required: true
+        type: boolean
+      versionEnvVar:
+        required: true
+        type: string
+      requestedMajorVersion:
+        required: true
+        type: string
+      requestedMinorVersion:
+        required: true
+        type: string
+      requestedPatchVersion:
+        required: true
+        type: string
+      configurationToPack:
+        required: true
+        type: string
+      buildProperties:
+        required: true
+        type: string
+      nuGetAdditionalArgs:
+        required: true
+        type: string
 
-      # NuGet Publisher
-      nuGetFeedType: { required: true, type: string }
-      connectedServiceName: { required: true, type: string }
-      feedName: { required: true, type: string }
-      continueOnEmptyNupkgMatch: { required: false, type: boolean }
+      nuGetFeedType:
+        required: true
+        type: string
+      connectedServiceName:
+        required: true
+        type: string
+      feedName:
+        required: true
+        type: string
+      continueOnEmptyNupkgMatch:
+        required: true
+        type: boolean
 
 jobs:
-  nuget-tasks:
+  build:
     runs-on: windows-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install NuGetTool (NuGetToolInstaller)
+      - name: Install NuGet Tool
         run: |
-          echo "Installing NuGet version: ${{ inputs.nuGetVersion }}"
-          choco install nuget.commandline -y
-          nuget update -self
+          choco install nuget.commandline --version ${{ inputs.nuGetVersion }}
 
-      - name: NuGet Restore
+      - name: Restore NuGet Packages
         run: |
           nuget restore "${{ inputs.solution }}" `
             -ConfigFile "${{ inputs.nugetConfigPath }}" `
             -PackagesDirectory "${{ inputs.packagesDirectory }}" `
             -Verbosity "${{ inputs.verbosity }}" `
-            ${{ inputs.noCache && '-NoCache' || '' }} `
-            ${{ inputs.nuGetRestoreArgs }}
+            -NoHttpCache
 
-      - name: NuGet Pack (Packager)
+      - name: Pack NuGet Package
         run: |
           nuget pack "${{ inputs.searchPattern }}" `
             -OutputDirectory "${{ inputs.outputdir }}" `
-            ${{ inputs.includeReferencedProjects && '-IncludeReferencedProjects' || '' }} `
-            ${{ inputs.versionByBuild && '-VersionByBuild' || '' }} `
-            ${{ inputs.versionEnvVar && '-Version "${{ env[inputs.versionEnvVar] }}"' || '' }} `
             -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" `
-            -Verbosity "${{ inputs.verbosity }}" `
+            -Version "${{ inputs.requestedMajorVersion }}.${{ inputs.requestedMinorVersion }}.${{ inputs.requestedPatchVersion }}" `
             ${{ inputs.nuGetAdditionalArgs }}
 
-      - name: NuGet Push (Publisher)
+      - name: Push NuGet Package
         run: |
-          nuget push "${{ inputs.outputdir }}/*.nupkg" `
+          nuget push "${{ inputs.outputdir }}\*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.NUGET_API_KEY }}" `
             -Verbosity "${{ inputs.verbosity }}" `
-            ${{ inputs.nuGetAdditionalArgs }} `
-            ${{ inputs.continueOnEmptyNupkgMatch && '-SkipDuplicate' || '' }}
+            ${{ inputs.nuGetAdditionalArgs }}
