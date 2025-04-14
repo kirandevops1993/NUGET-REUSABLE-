@@ -79,3 +79,5 @@ jobs:
             -Verbosity "${{ inputs.verbosity }}" `
             ${{ inputs.nuGetAdditionalArgs }} `
             ${{ inputs.continueOnEmptyNupkgMatch && '-SkipDuplicate' || '' }}
+
+            kirandevops1993/NUGET-REUSABLE-/.github/workflows/nuget-reusable.yml@main
