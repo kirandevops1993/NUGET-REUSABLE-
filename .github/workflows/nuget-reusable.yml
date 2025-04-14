@@ -21,6 +21,12 @@ on:
       verbosity:
         required: true
         type: string
+      nuGetVersion:
+        required: true
+        type: string
+      nuGetPath:
+        required: true
+        type: string
       searchPattern:
         required: true
         type: string
@@ -50,32 +56,53 @@ on:
         type: string
 
 jobs:
+  setup-mono:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Mono
+        run: |
+          sudo apt update
+          sudo apt install -y mono-complete
+
+  nuget-installer:
+    runs-on: ubuntu-latest
+    needs: setup-mono
+    steps:
+      - name: Install NuGet Tool
+        run: |
+          curl -o nuget.exe https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe
+          mkdir -p ${{ inputs.nuGetPath }}
+          mv nuget.exe ${{ inputs.nuGetPath }}/nuget.exe
+        env:
+          nuGetVersion: ${{ inputs.nuGetVersion }}
+
   nuget-restore:
     runs-on: ubuntu-latest
+    needs: [setup-mono, nuget-installer]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Restore NuGet Packages
+      - name: NuGet Restore
         run: |
-          dotnet restore ${{ inputs.solution }} --configfile ${{ inputs.nugetConfigPath }} \
-          --verbosity ${{ inputs.verbosity }} ${{ inputs.nuGetRestoreArgs }}
+          mono ${{ inputs.nuGetPath }}/nuget.exe restore ${{ inputs.solution }} -ConfigFile ${{ inputs.nugetConfigPath }}  
+          -Verbosity ${{ inputs.verbosity }} ${{ inputs.nuGetRestoreArgs }}
 
   nuget-pack:
     runs-on: ubuntu-latest
     needs: nuget-restore
     steps:
-      - name: Pack NuGet Package
+      - name: NuGet Packager
         run: |
-          dotnet pack ${{ inputs.searchPattern }} --output ${{ inputs.outputdir }} \
-          --configuration ${{ inputs.configurationToPack }} \
-          --property ${{ inputs.buildProperties }} ${{ inputs.nuGetAdditionalArgs }}
+          mono ${{ inputs.nuGetPath }}/nuget.exe pack ${{ inputs.searchPattern }} -OutputDirectory ${{ inputs.outputdir }}  
+          -Properties ${{ inputs.buildProperties }} -ConfigFile ${{ inputs.nugetConfigPath }}  
+          ${{ inputs.nuGetAdditionalArgs }}
 
   nuget-publish:
     runs-on: ubuntu-latest
     needs: nuget-pack
     steps:
-      - name: Publish NuGet Package
+      - name: NuGet Publisher
         run: |
-          dotnet nuget push ${{ inputs.outputdir }}/*.nupkg --source ${{ inputs.feedName }} \
+          mono ${{ inputs.nuGetPath }}/nuget.exe push ${{ inputs.outputdir }}/*.nupkg -Source ${{ inputs.feedName }}  
           ${{ inputs.nuGetAdditionalArgs }}
