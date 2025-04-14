@@ -104,13 +104,48 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = &"C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe"
-        shell: PowerShell
+          $msbuildPath = &"${{ env.ProgramFiles(x86) }}\Microsoft Visual Studio\Installer\vswhere.exe" `
+            -latest `
+            -products * `
+            -requires Microsoft.Component.MSBuild `
+            -find MSBuild\**\Bin\MSBuild.exe
+          Write-Output "::set-output name=msbuildPath::$msbuildPath"
+        shell: powershell
 
       - name: Build the Project
         run: |
-          & $msbuildPath ` 
+          $msbuildPath = "${{ steps.msbuild-path.outputs.msbuildPath }}"
+          & $msbuildPath `
             "${{ inputs.searchPattern }}" `
             /p:Configuration=${{ inputs.configurationToPack }} `
             /p:Platform="Any CPU" `
             /verbosity:${{ inputs.verbosity }}
+        shell: powershell
+
+      - name: Pack NuGet Packages
+        run: |
+          if (${{ inputs.includeSymbols }}) {
+            ./nuget.exe pack "${{ inputs.searchPattern }}" `
+              -OutputDirectory "${{ inputs.outputdir }}" `
+              -Symbols `
+              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+              -Properties "${{ inputs.buildProperties }}" `
+              ${{ inputs.nuGetAdditionalArgs }}
+          } else {
+            ./nuget.exe pack "${{ inputs.searchPattern }}" `
+              -OutputDirectory "${{ inputs.outputdir }}" `
+              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+              -Properties "${{ inputs.buildProperties }}" `
+              ${{ inputs.nuGetAdditionalArgs }}
+          }
+        shell: powershell
+
+      - name: Push NuGet Packages
+        run: |
+          ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
+            -Source "${{ inputs.feedName }}" `
+            -ApiKey "${{ inputs.apiKey }}" `
+            -SkipDuplicate ${{ inputs.skipDuplicate }} `
+            -Verbosity ${{ inputs.verbosity }} `
+            ${{ inputs.nuGetAdditionalArgs }}
+        shell: powershell
