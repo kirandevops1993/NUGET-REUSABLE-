@@ -95,29 +95,29 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install NuGet Tool
+      - name: Download NuGet CLI
         run: |
-          choco install nuget.commandline --version ${{ inputs.nuGetVersion }}
+          curl -L -o nuget.exe https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
 
       - name: Restore NuGet Packages
         run: |
-          nuget restore "${{ inputs.solution }}" `
-            -ConfigFile "${{ inputs.nugetConfigPath }}" `
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
-            -Verbosity "${{ inputs.verbosity }}" `
+          ./nuget.exe restore "${{ inputs.solution }}" ^
+            -ConfigFile "${{ inputs.nugetConfigPath }}" ^
+            -PackagesDirectory "${{ inputs.packagesDirectory }}" ^
+            -Verbosity "${{ inputs.verbosity }}" ^
             -NoHttpCache
 
       - name: Pack NuGet Package
         run: |
-          nuget pack "${{ inputs.searchPattern }}" `
-            -OutputDirectory "${{ inputs.outputdir }}" `
-            -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" `
-            -Version "${{ inputs.requestedMajorVersion }}.${{ inputs.requestedMinorVersion }}.${{ inputs.requestedPatchVersion }}" `
+          ./nuget.exe pack "${{ inputs.searchPattern }}" ^
+            -OutputDirectory "${{ inputs.outputdir }}" ^
+            -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" ^
+            -Version "${{ inputs.requestedMajorVersion }}.${{ inputs.requestedMinorVersion }}.${{ inputs.requestedPatchVersion }}" ^
             ${{ inputs.nuGetAdditionalArgs }}
 
       - name: Push NuGet Package
         run: |
-          nuget push "${{ inputs.outputdir }}\*.nupkg" `
-            -Source "${{ inputs.feedName }}" `
-            -Verbosity "${{ inputs.verbosity }}" `
+          ./nuget.exe push "${{ inputs.outputdir }}\\*.nupkg" ^
+            -Source "${{ inputs.feedName }}" ^
+            -Verbosity "${{ inputs.verbosity }}" ^
             ${{ inputs.nuGetAdditionalArgs }}
