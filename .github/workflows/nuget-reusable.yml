@@ -1,4 +1,4 @@
-name: NuGet Reusable Workflow
+name: reusable-nuget-workflow
 
 on:
   workflow_call:
@@ -9,38 +9,29 @@ on:
       nugetConfigPath:
         required: true
         type: string
-      restoreMode:
-        required: true
-        type: string
-      noCache:
-        required: true
-        type: boolean
-      nuGetRestoreArgs:
+      packagesDirectory:
         required: true
         type: string
       verbosity:
         required: true
         type: string
+      nuGetRestoreArgs:
+        required: false
+        type: string
+      restoreMode:
+        required: false
+        type: string
+      noCache:
+        required: false
+        type: boolean
       nuGetVersion:
-        required: true
+        required: false
         type: string
       nuGetPath:
-        required: true
+        required: false
         type: string
 
-      selectorConfig:
-        required: true
-        type: string
-      feed:
-        required: true
-        type: string
-      includeNuGetOrg:
-        required: true
-        type: boolean
-      packagesDirectory:
-        required: true
-        type: string
-
+      # Packager
       searchPattern:
         required: true
         type: string
@@ -51,30 +42,31 @@ on:
         required: true
         type: boolean
       versionByBuild:
-        required: true
+        required: false
         type: boolean
       versionEnvVar:
-        required: true
+        required: false
         type: string
       requestedMajorVersion:
-        required: true
+        required: false
         type: string
       requestedMinorVersion:
-        required: true
+        required: false
         type: string
       requestedPatchVersion:
-        required: true
+        required: false
         type: string
       configurationToPack:
-        required: true
+        required: false
         type: string
       buildProperties:
-        required: true
+        required: false
         type: string
       nuGetAdditionalArgs:
-        required: true
+        required: false
         type: string
 
+      # Publisher
       nuGetFeedType:
         required: true
         type: string
@@ -85,39 +77,47 @@ on:
         required: true
         type: string
       continueOnEmptyNupkgMatch:
-        required: true
+        required: false
         type: boolean
 
 jobs:
-  build:
+  build-and-publish:
     runs-on: windows-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Download NuGet CLI
         run: |
-          curl -L -o nuget.exe https://dist.nuget.org/win-x86-commandline/latest/nuget.exe
+          Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile nuget.exe
 
-      - name: Restore NuGet Packages
+      - name: NuGet Restore
         run: |
-          ./nuget.exe restore "${{ inputs.solution }}" ^
-            -ConfigFile "${{ inputs.nugetConfigPath }}" ^
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" ^
-            -Verbosity "${{ inputs.verbosity }}" ^
+          ./nuget.exe restore "${{ inputs.solution }}" `
+            -ConfigFile "${{ inputs.nugetConfigPath }}" `
+            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
+            -Verbosity "${{ inputs.verbosity }}" `
             -NoHttpCache
+        shell: pwsh
 
-      - name: Pack NuGet Package
+      - name: NuGet Pack
         run: |
-          ./nuget.exe pack "${{ inputs.searchPattern }}" ^
-            -OutputDirectory "${{ inputs.outputdir }}" ^
-            -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" ^
-            -Version "${{ inputs.requestedMajorVersion }}.${{ inputs.requestedMinorVersion }}.${{ inputs.requestedPatchVersion }}" ^
+          ./nuget.exe pack "${{ inputs.searchPattern }}" `
+            -OutputDirectory "${{ inputs.outputdir }}" `
+            -IncludeReferencedProjects ${{ inputs.includeReferencedProjects }} `
+            -Version "${{ inputs.requestedMajorVersion }}.${{ inputs.requestedMinorVersion }}.${{ inputs.requestedPatchVersion }}" `
+            -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" `
             ${{ inputs.nuGetAdditionalArgs }}
+        shell: pwsh
 
-      - name: Push NuGet Package
+      - name: NuGet Push
+        env:
+          NUGET_AUTH_TOKEN: ${{ secrets.NUGET_AUTH_TOKEN }}
         run: |
-          ./nuget.exe push "${{ inputs.outputdir }}\\*.nupkg" ^
-            -Source "${{ inputs.feedName }}" ^
-            -Verbosity "${{ inputs.verbosity }}" ^
+          ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
+            -Source "${{ inputs.feedName }}" `
+            -ApiKey $env:NUGET_AUTH_TOKEN `
+            -Verbosity "${{ inputs.verbosity }}" `
             ${{ inputs.nuGetAdditionalArgs }}
+        shell: pwsh
