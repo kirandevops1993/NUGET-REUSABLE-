@@ -104,11 +104,20 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = &"${{ env['ProgramFiles(x86)'] }}\Microsoft Visual Studio\Installer\vswhere.exe" `
+          $vswherePath = "${{ env['ProgramFiles(x86)'] }}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (!(Test-Path $vswherePath)) {
+            Write-Error "vswhere.exe not found at $vswherePath"
+            exit 1
+          }
+          $msbuildPath = & $vswherePath `
             -latest `
             -products * `
             -requires Microsoft.Component.MSBuild `
             -find MSBuild\**\Bin\MSBuild.exe
+          if (!$msbuildPath) {
+            Write-Error "MSBuild.exe not found"
+            exit 1
+          }
           Write-Output "::set-output name=msbuildPath::$msbuildPath"
         shell: powershell
 
