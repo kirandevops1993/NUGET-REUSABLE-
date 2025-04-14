@@ -121,4 +121,18 @@ jobs:
           } else {    
             ./nuget.exe pack "${{ inputs.searchPattern }}" `
               -OutputDirectory "${{ inputs.outputdir }}" `
-              -Version "${{ inputs.majorVersion }}.${{ inpu
+              -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+              -Properties "${{ inputs.buildProperties }}" `
+              ${{ inputs.nuGetAdditionalArgs }}   
+          }
+        shell: powershell
+
+      - name: Push NuGet Packages
+        run: |
+          ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
+            -Source "${{ inputs.feedName }}" `
+            -ApiKey "${{ inputs.apiKey }}" `
+            -SkipDuplicate ${{ inputs.skipDuplicate }} `
+            -Verbosity ${{ inputs.verbosity }} `
+            ${{ inputs.nuGetAdditionalArgs }}
+        shell: powershell
