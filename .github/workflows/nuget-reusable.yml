@@ -38,7 +38,7 @@ on:
       outputdir:
         required: true
         type: string
-      includeReferencedProjects:
+      Sensitive_Alphanumeric_Info_1:
         required: true
         type: boolean
       versionByBuild:
@@ -47,13 +47,13 @@ on:
       versionEnvVar:
         required: true
         type: string
-      requestedMajorVersion:
+      Sensitive_Alphanumeric_Info_2:
         required: true
         type: number
-      requestedMinorVersion:
+      Sensitive_Alphanumeric_Info_3:
         required: true
         type: number
-      requestedPatchVersion:
+      Sensitive_Alphanumeric_Info_4:
         required: true
         type: number
       configurationToPack:
@@ -70,13 +70,13 @@ on:
       nuGetFeedType:
         required: true
         type: string
-      connectedServiceName:
+      Sensitive_Alphanumeric_Info_5:
         required: true
         type: string
       feedName:
         required: true
         type: string
-      continueOnEmptyNupkgMatch:
+      Sensitive_Alphanumeric_Info_6:
         required: true
         type: boolean
 
@@ -104,8 +104,8 @@ jobs:
         run: |
           .\nuget.exe pack "${{ inputs.searchPattern }}" `
             -OutputDirectory "${{ inputs.outputdir }}" `
-            - IncludeReferencedProjects ${{ inputs. includeReferencedProjects }} `
-            -Version "${{ inputs. requestedMajorVersion }}.${{ inputs. requestedMinorVersion }}.${{ inputs. requestedPatchVersion }}" `
+            - Sensitive_Alphanumeric_Info_7 ${{ inputs. Sensitive_Alphanumeric_Info_1 }} `
+            -Version "${{ inputs. Sensitive_Alphanumeric_Info_2 }}.${{ inputs. Sensitive_Alphanumeric_Info_3 }}.${{ inputs. Sensitive_Alphanumeric_Info_4 }}" `
             -Properties "${{ inputs.buildProperties }}" `
             ${{ inputs.nuGetAdditionalArgs }}
 
