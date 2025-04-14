@@ -3,34 +3,82 @@ name: Reusable NuGet Workflow
 on:
   workflow_call:
     inputs:
-      solution: { required: true, type: string }
-      nugetConfigPath: { required: true, type: string }
-      packagesDirectory: { required: true, type: string }
-      verbosity: { required: true, type: string }
-      nuGetRestoreArgs: { required: true, type: string }
-      restoreMode: { required: true, type: string }
-      noCache: { required: true, type: boolean }
-      nuGetVersion: { required: true, type: string }
-      nuGetPath: { required: true, type: string }
+      solution:
+        required: true
+        type: string
+      nugetConfigPath:
+        required: true
+        type: string
+      packagesDirectory:
+        required: true
+        type: string
+      verbosity:
+        required: true
+        type: string
+      nuGetRestoreArgs:
+        required: true
+        type: string
+      restoreMode:
+        required: true
+        type: string
+      noCache:
+        required: true
+        type: boolean
+      nuGetVersion:
+        required: true
+        type: string
+      nuGetPath:
+        required: true
+        type: string
 
-      # Packager Inputs
-      searchPattern: { required: true, type: string }
-      outputdir: { required: true, type: string }
-      includeSymbols: { required: true, type: boolean }
-      versionByBuild: { required: true, type: boolean }
-      versionEnvVar: { required: true, type: string }
-      majorVersion: { required: true, type: number }
-      minorVersion: { required: true, type: number }
-      patchVersion: { required: true, type: number }
-      configurationToPack: { required: true, type: string }
-      buildProperties: { required: true, type: string }
-      nuGetAdditionalArgs: { required: true, type: string }
+      # Packager
+      searchPattern:
+        required: true
+        type: string
+      outputdir:
+        required: true
+        type: string
+      includeSymbols:
+        required: true
+        type: boolean
+      versionByBuild:
+        required: true
+        type: boolean
+      versionEnvVar:
+        required: true
+        type: string
+      majorVersion:
+        required: true
+        type: number
+      minorVersion:
+        required: true
+        type: number
+      patchVersion:
+        required: true
+        type: number
+      configurationToPack:
+        required: true
+        type: string
+      buildProperties:
+        required: true
+        type: string
+      nuGetAdditionalArgs:
+        required: true
+        type: string
 
-      # Publisher Inputs
-      nuGetFeedType: { required: true, type: string }
-      apiKey: { required: true, type: string }
-      feedName: { required: true, type: string }
-      skipDuplicate: { required: true, type: boolean }
+      # Publisher
+      nuGetFeedType:
+        required: true
+        type: string
+      apiKey:
+        required: true
+        type: string
+      feedName:
+        required: true
+        type: string
+      skipDuplicate:
+        required: true
+        type: boolean
 
 jobs:
   nuget-tasks:
@@ -41,7 +89,7 @@ jobs:
 
       - name: Download NuGet CLI
         run: |
-          Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe" -OutFile nuget.exe
+          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe -OutFile nuget.exe
         shell: powershell
 
       - name: Restore NuGet Packages
@@ -56,18 +104,21 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+          $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (!(Test-Path $vswherePath)) {
+            Write-Error "vswhere.exe not found at $vswherePath"
+            exit 1
+          }
+          $msbuildPath = & $vswherePath `
             -latest `
             -products * `
             -requires Microsoft.Component.MSBuild `
             -find MSBuild\**\Bin\MSBuild.exe
-          
           if (!$msbuildPath) {
             Write-Error "MSBuild.exe not found"
             exit 1
           }
-
-          echo "msbuildPath=$msbuildPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Output "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
         shell: powershell
 
       - name: Build the Project
@@ -77,7 +128,6 @@ jobs:
             /t:Rebuild `
             /p:Configuration=${{ inputs.configurationToPack }} `
             /p:Platform="Any CPU" `
-            /p:OutputPath=bin\${{ inputs.configurationToPack }} `
             /verbosity:${{ inputs.verbosity }}
         shell: powershell
 
@@ -88,13 +138,13 @@ jobs:
               -OutputDirectory "${{ inputs.outputdir }}" `
               -Symbols `
               -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-              -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" `
+              -Properties "${{ inputs.buildProperties }}" `
               ${{ inputs.nuGetAdditionalArgs }}
           } else {
             ./nuget.exe pack "${{ inputs.searchPattern }}" `
               -OutputDirectory "${{ inputs.outputdir }}" `
               -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-              -Properties "Configuration=${{ inputs.configurationToPack }};${{ inputs.buildProperties }}" `
+              -Properties "${{ inputs.buildProperties }}" `
               ${{ inputs.nuGetAdditionalArgs }}
           }
         shell: powershell
