@@ -89,7 +89,7 @@ jobs:
 
       - name: Download NuGet CLI
         run: |
-          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/v6.13.2/nuget.exe -OutFile nuget.exe
+          Invoke-WebRequest -Uri https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe -OutFile nuget.exe
         shell: powershell
 
       - name: Restore NuGet Packages
@@ -104,7 +104,7 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $vswherePath = "${{ env['ProgramFiles(x86)'] }}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vswherePath = "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe"
           if (!(Test-Path $vswherePath)) {
             Write-Error "vswhere.exe not found at $vswherePath"
             exit 1
@@ -118,7 +118,8 @@ jobs:
             Write-Error "MSBuild.exe not found"
             exit 1
           }
-          Write-Output "::set-output name=msbuildPath::$msbuildPath"
+          echo "MSBuild Path Found: $msbuildPath"
+          echo "::set-output name=msbuildPath::$msbuildPath"
         shell: powershell
 
       - name: Build the Project
@@ -151,10 +152,10 @@ jobs:
 
       - name: Push NuGet Packages
         run: |
-          ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
+          ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
             -Source "${{ inputs.feedName }}" `
             -ApiKey "${{ inputs.apiKey }}" `
-            -SkipDuplicate ${{ inputs.skipDuplicate }} `
+            -SkipDuplicate:$${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
         shell: powershell
