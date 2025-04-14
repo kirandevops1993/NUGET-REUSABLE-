@@ -93,26 +93,26 @@ jobs:
 
       - name: Restore NuGet Packages
         run: |
-          ./nuget.exe restore "${{ inputs.solution }}" ` 
-            -ConfigFile "${{ inputs.nugetConfigPath }}" ` 
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" ` 
-            -Verbosity ${{ inputs.verbosity }} ` 
-            -NonInteractive ` 
+          .\nuget.exe restore "${{ inputs.solution }}" `
+            -ConfigFile "${{ inputs.nugetConfigPath }}" `
+            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
+            -Verbosity ${{ inputs.verbosity }} `
+            -NonInteractive `
             -NoHttpCache ${{ inputs.noCache }}
 
       - name: Pack NuGet Packages
         run: |
-          ./nuget.exe pack "${{ inputs.searchPattern }}" ` 
-            -OutputDirectory "${{ inputs.outputdir }}" ` 
-            -IncludeReferencedProjects ${{ inputs.includeReferencedProjects }} ` 
-            -Version "${{ inputs.requestedMajorVersion }}.${{ inputs.requestedMinorVersion }}.${{ inputs.requestedPatchVersion }}" ` 
-            -Properties "${{ inputs.buildProperties }}" ` 
+          .\nuget.exe pack "${{ inputs.searchPattern }}" `
+            -OutputDirectory "${{ inputs.outputdir }}" `
+            - IncludeReferencedProjects ${{ inputs. includeReferencedProjects }} `
+            -Version "${{ inputs. requestedMajorVersion }}.${{ inputs. requestedMinorVersion }}.${{ inputs. requestedPatchVersion }}" `
+            -Properties "${{ inputs.buildProperties }}" `
             ${{ inputs.nuGetAdditionalArgs }}
 
       - name: Push NuGet Packages
         run: |
-          ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" ` 
-            -Source "${{ inputs.feedName }}" ` 
-            -NonInteractive ` 
-            -Verbosity ${{ inputs.verbosity }} ` 
+          .\nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
+            -Source "${{ inputs.feedName }}" `
+            -NonInteractive `
+            -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
