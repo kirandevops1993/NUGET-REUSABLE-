@@ -79,7 +79,7 @@ on:
         type: boolean
 
     secrets:
-      MY_TOKEN:
+      apiKey:
         required: true
 
 jobs:
@@ -106,9 +106,9 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = (Get-ChildItem -Path "${env:ProgramFiles(x86)}\Microsoft Visual Studio" -Recurse -Filter "MSBuild.exe" | Select-Object -First 1).FullName
-          if (!$msbuildPath) {
-            Write-Error "MSBuild.exe not found"
+          $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+          if (!(Test-Path $msbuildPath)) {
+            Write-Error "MSBuild.exe not found at $msbuildPath"
             exit 1
           }
           echo "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
@@ -137,11 +137,11 @@ jobs:
 
       - name: Push NuGet Packages
         env:
-          NUGET_CREDENTIALPROVIDER_VSTS_PAT: ${{ secrets.MY_TOKEN }}
+          NUGET_CREDENTIALPROVIDER_VSTS_PAT: ${{ secrets.apiKey }}
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.MY_TOKEN }}" `
+            -ApiKey "${{ secrets.apiKey }}" `
             -SkipDuplicate `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
