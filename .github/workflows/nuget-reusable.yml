@@ -136,13 +136,11 @@ jobs:
         shell: powershell
 
       - name: Push NuGet Packages
-        env:
-          NUGET_AUTH_TOKEN: ${{ secrets.apiKey }}
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "AzureDevOps" `
-            -SkipDuplicate:${{ inputs.skipDuplicate }} `
+            -ApiKey "${{ secrets.apiKey }}" `
+            -SkipDuplicate `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
         shell: powershell
