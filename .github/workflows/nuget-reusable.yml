@@ -136,8 +136,10 @@ jobs:
         shell: powershell
 
       - name: Push NuGet Packages
+        env:
+          NUGET_CREDENTIALPROVIDER_VSTS_PAT: ${{ secrets.apiKey }}
         run: |
-          ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
+          ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
             -ApiKey "${{ secrets.apiKey }}" `
             -SkipDuplicate `
