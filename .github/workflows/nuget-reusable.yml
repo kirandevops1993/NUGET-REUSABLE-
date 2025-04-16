@@ -134,6 +134,8 @@ jobs:
 
       - name: Push NuGet Packages
         env:
+          # Disable automatic credential providers so that the API key is used directly.
+          NUGET_CREDENTIALPROVIDER_DISABLE: 'true'
           NUGET_CREDENTIALPROVIDER_VSTS_PAT: ${{ secrets.apiKey }}
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
