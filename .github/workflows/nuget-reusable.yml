@@ -74,9 +74,6 @@ on:
       feedName:
         required: true
         type: string
-      skipDuplicate:
-        required: true
-        type: boolean
 
     secrets:
       apiKey:
@@ -142,7 +139,6 @@ jobs:
           ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
             -ApiKey "${{ secrets.apiKey }}" `
-            -SkipDuplicate:${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
         shell: powershell
