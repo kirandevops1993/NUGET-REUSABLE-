@@ -1,151 +1,41 @@
-name: Reusable NuGet Workflow
+name: Main NuGet Workflow
 
 on:
-  workflow_call:
-    inputs:
-      # Restore Inputs
-      solution:
-        required: true
-        type: string
-      nugetConfigPath:
-        required: true
-        type: string
-      packagesDirectory:
-        required: true
-        type: string
-      verbosity:
-        required: true
-        type: string
-      nuGetRestoreArgs:
-        required: true
-        type: string
-      restoreMode:
-        required: true
-        type: string
-      noCache:
-        required: true
-        type: boolean
-      nuGetVersion:
-        required: true
-        type: string
-      nuGetPath:
-        required: true
-        type: string
-
-      # Packager Inputs
-      searchPattern:
-        required: true
-        type: string
-      outputdir:
-        required: true
-        type: string
-      includeSymbols:
-        required: true
-        type: boolean
-      versionByBuild:
-        required: true
-        type: boolean
-      versionEnvVar:
-        required: true
-        type: string
-      majorVersion:
-        required: true
-        type: number
-      minorVersion:
-        required: true
-        type: number
-      patchVersion:
-        required: true
-        type: number
-      configurationToPack:
-        required: true
-        type: string
-      buildProperties:
-        required: true
-        type: string
-      nuGetAdditionalArgs:
-        required: true
-        type: string
-
-      # Publisher Inputs
-      nuGetFeedType:
-        required: true
-        type: string
-      feedName:
-        required: true
-        type: string
-
-    secrets:
-      apiKey:
-        required: true
+  push:
+    branches:
+      - main
 
 jobs:
-  nuget-tasks:
-    runs-on: windows-latest
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+  call-reusable-nuget:
+    uses: kirandevops1993/NUGET-REUSABLE-/.github/workflows/nuget-reusable.yml@main
+    with:
+      # Restore Inputs
+      solution: OrchardCore.sln
+      nugetConfigPath: ./NuGet.config
+      packagesDirectory: ./packages
+      verbosity: detailed
+      nuGetRestoreArgs: ""
+      restoreMode: restore
+      noCache: true
+      nuGetVersion: 6.13.2
+      nuGetPath: ./nuget.exe
 
-      - name: Download NuGet CLI
-        run: |
-          Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe" -OutFile nuget.exe
-        shell: powershell
+      # Packager Inputs
+      searchPattern: src/docs/OrchardCore.Docs.csproj
+      outputdir: ./nupkgs
+      includeSymbols: true
+      versionByBuild: false
+      versionEnvVar: ""
+      majorVersion: 1
+      minorVersion: 0
+      patchVersion: 0
+      configurationToPack: Release
+      buildProperties: Platform="Any CPU"
+      nuGetAdditionalArgs: ""
 
-      - name: Restore NuGet Packages
-        run: |
-          ./nuget.exe restore "${{ inputs.solution }}" `
-            -ConfigFile "${{ inputs.nugetConfigPath }}" `
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
-            -Verbosity ${{ inputs.verbosity }} `
-            -NonInteractive
-        shell: powershell
+      # Publisher Inputs
+      nuGetFeedType: internal
+      feedName: https://nuget.pkg.github.com/kirandevops1993/index.json
 
-      - name: Locate MSBuild Path
-        id: msbuild-path
-        run: |
-          $msbuildPath = "C:Program FilesMicrosoft Visual Studio2022EnterpriseMSBuildCurrentBinMSBuild.exe"
-          if (!(Test-Path $msbuildPath)) {
-            Write-Error "MSBuild.exe not found at $msbuildPath"
-            exit 1
-          }
-          echo "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
-        shell: powershell
-
-      - name: Build the Project
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:${{ inputs.buildProperties }} `
-            /verbosity:${{ inputs.verbosity }}
-        shell: powershell
-
-      - name: Pack NuGet Packages using MSBuild
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
-            /t:Pack `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:PackageOutputPath="${{ inputs.outputdir }}" `
-            /p:IncludeSymbols=${{ inputs.includeSymbols }} `
-            /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-            /p:${{ inputs.buildProperties }}
-        shell: powershell
-
-      - name: Display NuGet Package Output
-        run: |
-          Get-ChildItem "${{ inputs.outputdir }}" | ForEach-Object { Write-Host $_.FullName }
-        shell: powershell
-
-      - name: Push NuGet Packages
-        env:
-          # Disable automatic credential providers so that the API key is used directly.
-          NUGET_CREDENTIALPROVIDER_DISABLE: 'true'
-          NUGET_CREDENTIALPROVIDER_VSTS_PAT: ${{ secrets.apiKey }}
-        run: |
-          ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
-            -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.apiKey }}" `
-            -Verbosity ${{ inputs.verbosity }} `
-            ${{ inputs.nuGetAdditionalArgs }}
-        shell: powershell
+    secrets:
+      apiKey: ${{ secrets.DEMO_CHECK }}
