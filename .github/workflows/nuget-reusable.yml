@@ -1,5 +1,3 @@
-REUSABLE:
-
 name: Reusable NuGet Workflow
 
 on:
