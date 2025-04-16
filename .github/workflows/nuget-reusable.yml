@@ -141,8 +141,8 @@ jobs:
         run: |
           ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.MY_TOKEN }}" `
-            -SkipDuplicate `
+            -ApiKey "${{ secrets.apiKey }}" `
+            -SkipDuplicate:${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
         shell: powershell
