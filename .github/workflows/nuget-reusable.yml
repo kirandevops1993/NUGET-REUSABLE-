@@ -106,7 +106,7 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+          $msbuildPath = "C:Program FilesMicrosoft Visual Studio2022EnterpriseMSBuildCurrentBinMSBuild.exe"
           if (!(Test-Path $msbuildPath)) {
             Write-Error "MSBuild.exe not found at $msbuildPath"
             exit 1
@@ -142,7 +142,7 @@ jobs:
           ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
             -ApiKey "${{ secrets.apiKey }}" `
-            -SkipDuplicate `
+            -SkipDuplicate:${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
         shell: powershell
