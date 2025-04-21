@@ -3,7 +3,6 @@ name: Reusable NuGet Workflow
 on:
   workflow_call:
     inputs:
-      # Restore Inputs
       solution:
         required: true
         type: string
@@ -32,7 +31,7 @@ on:
         required: true
         type: string
 
-      # Packager Inputs
+      # Packager
       searchPattern:
         required: true
         type: string
@@ -67,8 +66,11 @@ on:
         required: true
         type: string
 
-      # Publisher Inputs
+      # Publisher
       nuGetFeedType:
+        required: true
+        type: string
+      apiKey:
         required: true
         type: string
       feedName:
@@ -77,10 +79,6 @@ on:
       skipDuplicate:
         required: true
         type: boolean
-
-    secrets:
-      apiKey:
-        required: true
 
 jobs:
   nuget-tasks:
@@ -91,58 +89,30 @@ jobs:
 
       - name: Download NuGet CLI
         run: |
-          Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe" -OutFile nuget.exe
-        shell: powershell
+          Invoke-WebRequest https://dist.nuget.org/win-x86-commandline/v6.13.2/nuget.exe -OutFile nuget.exe
 
       - name: Restore NuGet Packages
         run: |
-          ./nuget.exe restore "${{ inputs.solution }}" `
+          .\nuget.exe restore "${{ inputs.solution }}" `
             -ConfigFile "${{ inputs.nugetConfigPath }}" `
             -PackagesDirectory "${{ inputs.packagesDirectory }}" `
             -Verbosity ${{ inputs.verbosity }} `
             -NonInteractive
-        shell: powershell
 
-      - name: Locate MSBuild Path
-        id: msbuild-path
+      - name: Pack NuGet Packages
         run: |
-          $msbuildPath = "C:Program FilesMicrosoft Visual Studio2022EnterpriseMSBuildCurrentBinMSBuild.exe"
-          if (!(Test-Path $msbuildPath)) {
-            Write-Error "MSBuild.exe not found at $msbuildPath"
-            exit 1
-          }
-          echo "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
-        shell: powershell
-
-      - name: Build the Project
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:${{ inputs.buildProperties }} `
-            /verbosity:${{ inputs.verbosity }}
-        shell: powershell
-
-      - name: Pack NuGet Packages using MSBuild
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
-            /t:Pack `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:PackageOutputPath="${{ inputs.outputdir }}" `
-            /p:IncludeSymbols=${{ inputs.includeSymbols }} `
-            /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-            /p:${{ inputs.buildProperties }}
-        shell: powershell
+          .\nuget.exe pack "${{ inputs.searchPattern }}" `
+            -OutputDirectory "${{ inputs.outputdir }}" `
+            -Symbols ${{ inputs.includeSymbols }} `
+            -Version "${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
+            -Properties "${{ inputs.buildProperties }}" `
+            ${{ inputs.nuGetAdditionalArgs }}
 
       - name: Push NuGet Packages
-        env:
-          NUGET_CREDENTIALPROVIDER_VSTS_PAT: ${{ secrets.apiKey }}
         run: |
-          ./nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
+          .\nuget.exe push "${{ inputs.outputdir }}*.nupkg" `
             -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.apiKey }}" `
-            -SkipDuplicate:${{ inputs.skipDuplicate }} `
+            -ApiKey "${{ inputs.apiKey }}" `
+            -SkipDuplicate ${{ inputs.skipDuplicate }} `
             -Verbosity ${{ inputs.verbosity }} `
             ${{ inputs.nuGetAdditionalArgs }}
-        shell: powershell
