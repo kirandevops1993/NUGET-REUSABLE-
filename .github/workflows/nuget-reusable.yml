@@ -134,13 +134,3 @@ jobs:
             /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
             /p:${{ inputs.buildProperties }}
         shell: powershell
-
-      - name: Push NuGet Packages
-        run: |
-          ./nuget.exe push "${{ inputs.outputdir }}\*.nupkg" `
-            -Source "${{ inputs.feedName }}" `
-            -ApiKey "${{ secrets.apiKey }}" `
-            -SkipDuplicate `
-            -Verbosity ${{ inputs.verbosity }} `
-            ${{ inputs.nuGetAdditionalArgs }}
-        shell: powershell
