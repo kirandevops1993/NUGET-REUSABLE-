@@ -1,48 +1,36 @@
-name: Reusable Dotnet Workflow
+name: Dotnet Reusable Workflow
+
 on:
   workflow_call:
     inputs:
-      command:
+      commands:
         required: true
         type: string
-      projects:
-        required: false
-        type: string
-      arguments:
-        required: false
-        type: string
-      nugetConfigPath:
-        required: false
-        type: string
-      packagesToPack:
-        required: false
-        type: string
-      configuration:
-        required: false
-        type: string
-      packagesToPush:
-        required: false
-        type: string
+
 jobs:
   dotnet:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        command: ${{ fromJson(inputs.commands) }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.201'
-      - name: Restore
-        if: ${{ inputs.command == 'restore' }}
-        run: dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
-      - name: Build
-        if: ${{ inputs.command == 'build' }}
-        run: dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
-      - name: Test
-        if: ${{ inputs.command == 'test' }}
-        run: dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
-      - name: Pack
-        if: ${{ inputs.command == 'pack' }}
-        run: dotnet pack "${{ inputs.packagesToPack }}" --configuration "${{ inputs.configuration }}" -o ./nupkgs
-      - name: Push
-        if: ${{ inputs.command == 'push' }}
-        run: dotnet nuget push "${{ inputs.packagesToPush }}" --source https://api.nuget.org/v3/index.json
+          dotnet-version: 8.0.x
+
+      - name: Run ${{ matrix.command }}
+        run: |
+          CMD="${{ matrix.command }}"
+          if [ "$CMD" = "restore" ]; then
+            dotnet restore "**/*.csproj" --configfile "NuGet.config"
+          elif [ "$CMD" = "build" ]; then
+            dotnet build "**/*.csproj" --configuration Release
+          else
+            echo "Unsupported command: $CMD"
+            exit 1
+          fi
+        shell: bash
