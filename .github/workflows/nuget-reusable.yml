@@ -42,7 +42,7 @@ jobs:
         run: dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
       - name: Pack
         if: ${{ inputs.command == 'pack' }}
-        run: dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ./nupkgs
+        run: dotnet pack "${{ inputs.packagesToPack }}" --configuration "${{ inputs.configuration }}" -o ./nupkgs
       - name: Push
         if: ${{ inputs.command == 'push' }}
-        run: dotnet nuget push "${{ inputs.packagesToPush }}" --source "https://api.nuget.org/v3/index.json"
+        run: dotnet nuget push "${{ inputs.packagesToPush }}" --source https://api.nuget.org/v3/index.json
