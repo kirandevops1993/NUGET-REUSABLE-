@@ -1,3 +1,4 @@
+# .github/workflows/dotnetreusable.yml
 name: Reusable Dotnet Workflow
 on:
   workflow_call:
@@ -33,34 +34,22 @@ jobs:
   dotnet:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET SDK 9.0.201
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.201'
-
-      - name: Run dotnet ${{ inputs.command }}
-        run: |
-          CMD="${{ inputs.command }}"
-
-          if [ "$CMD" = "restore" ]; then
-            dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
-          
-          elif [ "$CMD" = "build" ]; then
-            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
-          
-          elif [ "$CMD" = "test" ]; then
-            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
-          
-          elif [ "$CMD" = "pack" ]; then
-            dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ./nupkgs
-          
-          elif [ "$CMD" = "push" ]; then
-            dotnet nuget push "${{ inputs.packagesToPush }}" --source "https://api.nuget.org/v3/index.json"
-          
-          else
-            echo "Unsupported command: $CMD"
-            exit 1
-          fi
+      - name: Restore
+        if: ${{ inputs.command == 'restore' }}
+        run: dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
+      - name: Build
+        if: ${{ inputs.command == 'build' }}
+        run: dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
+      - name: Test
+        if: ${{ inputs.command == 'test' }}
+        run: dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
+      - name: Pack
+        if: ${{ inputs.command == 'pack' }}
+        run: dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ./nupkgs
+      - name: Push
+        if: ${{ inputs.command == 'push' }}
+        run: dotnet nuget push "${{ inputs.packagesToPush }}" --source "https://api.nuget.org/v3/index.json"
