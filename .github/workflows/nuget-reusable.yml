@@ -1,5 +1,4 @@
 name: Reusable Dotnet Workflow
-
 on:
   workflow_call:
     inputs:
@@ -30,7 +29,6 @@ on:
       nuGetFeedType:
         required: false
         type: string
-
 jobs:
   dotnet:
     runs-on: ubuntu-latest
@@ -38,10 +36,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET SDK 9.0.201
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '9.0.201'
 
       - name: Run dotnet ${{ inputs.command }}
         run: |
@@ -49,7 +47,7 @@ jobs:
           
           if [ "$CMD" = "restore" ]; then
             dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
-          
+
           elif [ "$CMD" = "build" ]; then
             dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
           
@@ -60,10 +58,8 @@ jobs:
             dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ./nupkgs
           
           elif [ "$CMD" = "push" ]; then
-            dotnet nuget push "${{ inputs.packagesToPush }}" \
-              --source "https://api.nuget.org/v3/index.json"
+            dotnet nuget push "${{ inputs.packagesToPush }}" --source "https://api.nuget.org/v3/index.json"
           
           else
             echo "Unsupported command: $CMD"
             exit 1
-          fi
