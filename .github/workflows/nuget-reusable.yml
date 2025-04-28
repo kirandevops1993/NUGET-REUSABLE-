@@ -1,4 +1,3 @@
-# .github/workflows/dotnetreusable.yml
 name: Reusable Dotnet Workflow
 on:
   workflow_call:
