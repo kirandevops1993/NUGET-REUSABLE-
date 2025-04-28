@@ -116,7 +116,7 @@ jobs:
       - name: Pack
         if: ${{ inputs.command == 'pack' }}
         run: |
-          dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ${{ inputs.packDirectory || './nupkgs' }} ${{ inputs.modifyOutputPath }} ${{ inputs.buildProperties }} ${{ inputs.verbosityPack }} ${{ inputs.nobuild && '--no-build' || '' }} ${{ inputs.includesymbols && '--include-symbols' || '' }} ${{ inputs.includesource && '--include-source' || '' }}
+          dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ${{ inputs.packDirectory || './nupkgs' }} ${{ inputs.modifyOutputPath }} ${{ inputs.buildProperties }} --verbosity ${{ inputs.verbosityPack }} ${{ inputs.nobuild && '--no-build' || '' }} ${{ inputs.includesymbols && '--include-symbols' || '' }} ${{ inputs.includesource && '--include-source' || '' }}
 
       - name: Push
         if: ${{ inputs.command == 'push' }}
