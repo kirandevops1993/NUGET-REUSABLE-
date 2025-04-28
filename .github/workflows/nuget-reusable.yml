@@ -44,10 +44,10 @@ jobs:
       - name: Run dotnet ${{ inputs.command }}
         run: |
           CMD="${{ inputs.command }}"
-          
+
           if [ "$CMD" = "restore" ]; then
             dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
-
+          
           elif [ "$CMD" = "build" ]; then
             dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
           
@@ -63,3 +63,4 @@ jobs:
           else
             echo "Unsupported command: $CMD"
             exit 1
+          fi
