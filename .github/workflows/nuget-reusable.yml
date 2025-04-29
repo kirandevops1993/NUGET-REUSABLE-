@@ -36,7 +36,7 @@ on:
 
 jobs:
   dotnet:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     defaults:
       run:
         working-directory: ${{ inputs.workingDirectory || '.' }}
@@ -58,34 +58,34 @@ jobs:
           echo "Custom Flag: ${{ inputs.custom }}"
 
           if [ "$CMD" = "restore" ]; then
-            dotnet restore "${{ inputs.projects }}" \
-              --configfile "${{ inputs.nugetConfigPath }}" \
-              ${{ inputs.restoreArguments }} \
-              --no-cache="${{ inputs.noCache }}" \
-              --packages "${{ inputs.restoreDirectory }}" \
+            dotnet restore "${{ inputs.projects }}" `
+              --configfile "${{ inputs.nugetConfigPath }}" `
+              ${{ inputs.restoreArguments }} `
+              --no-cache="${{ inputs.noCache }}" `
+              --packages "${{ inputs.restoreDirectory }}" `
               --verbosity "${{ inputs.verbosityRestore }}"
 
           elif [ "$CMD" = "build" ]; then
             dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
 
           elif [ "$CMD" = "test" ]; then
-            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} \
+            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} `
               --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
 
           elif [ "$CMD" = "pack" ]; then
-            dotnet pack "${{ inputs.packagesToPack }}" \
-              --configuration "${{ inputs.configuration }}" \
-              --output "${{ inputs.packDirectory }}" \
-              --no-build="${{ inputs.nobuild }}" \
-              --include-symbols="${{ inputs.includesymbols }}" \
-              --include-source="${{ inputs.includesource }}" \
-              --property "${{ inputs.buildProperties }}" \
+            dotnet pack "${{ inputs.packagesToPack }}" `
+              --configuration "${{ inputs.configuration }}" `
+              --output "${{ inputs.packDirectory }}" `
+              --no-build="${{ inputs.nobuild }}" `
+              --include-symbols="${{ inputs.includesymbols }}" `
+              --include-source="${{ inputs.includesource }}" `
+              --property "${{ inputs.buildProperties }}" `
               --verbosity "${{ inputs.verbosityPack }}"
 
           elif [ "$CMD" = "push" ]; then
-            dotnet nuget push "${{ inputs.packagesToPush }}" \
-              --source "https://api.nuget.org/v3/index.json" \
-              --timeout "${{ inputs.requestTimeout }}" \
+            dotnet nuget push "${{ inputs.packagesToPush }}" `
+              --source "https://api.nuget.org/v3/index.json" `
+              --timeout "${{ inputs.requestTimeout }}" `
               --api-key ${{ secrets.NUGET_API_KEY }}
 
           else
