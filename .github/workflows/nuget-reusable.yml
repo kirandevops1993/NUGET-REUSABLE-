@@ -37,22 +37,40 @@ jobs:
           echo "Run CMD=\"${{ inputs.command }}\""
           CMD="${{ inputs.command }}"
 
+          # Fallback for empty inputs to prevent failures
+          PROJECTS="${{ inputs.projects || '**/*.csproj' }}"
+          CONFIGFILE="${{ inputs.nugetConfigPath || '' }}"
+          ARGUMENTS="${{ inputs.arguments || '' }}"
+          CONFIGURATION="${{ inputs.configuration || 'Release' }}"
+          PACKAGES="${{ inputs.packagesToPush || './nupkgs/*.nupkg' }}"
+
           if [ "$CMD" = "restore" ]; then
-            dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath}"
+            echo "Restoring project with ${PROJECTS} and config file ${CONFIGFILE}"
+            dotnet restore "$PROJECTS" --configfile "$CONFIGFILE"
+          fi
 
-          elif [ "$CMD" = "build" ]; then
-            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
+          if [ "$CMD" = "build" ]; then
+            echo "Building project with ${PROJECTS} and arguments ${ARGUMENTS}"
+            dotnet build "$PROJECTS" $ARGUMENTS
+          fi
 
-          elif [ "$CMD" = "test" ]; then
-            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
+          if [ "$CMD" = "test" ]; then
+            echo "Running tests on ${PROJECTS} with arguments ${ARGUMENTS}"
+            dotnet test "$PROJECTS" $ARGUMENTS --logger trx
+          fi
 
-          elif [ "$CMD" = "pack" ]; then
-            dotnet pack "${{ inputs.projects }}" --configuration "${{ inputs.configuration }}" -o ./nupkgs
+          if [ "$CMD" = "pack" ]; then
+            echo "Packing project with ${PROJECTS} and configuration ${CONFIGURATION}"
+            dotnet pack "$PROJECTS" --configuration "$CONFIGURATION" -o ./nupkgs
+          fi
 
-          elif [ "$CMD" = "push" ]; then
-            dotnet nuget push "${{ inputs.packagesToPush }}" --source "https://api.nuget.org/v3/index.json"
+          if [ "$CMD" = "push" ]; then
+            echo "Pushing packages: ${PACKAGES}"
+            dotnet nuget push "$PACKAGES" --source "https://api.nuget.org/v3/index.json"
+          fi
 
-          else
+          # Catch-all for unsupported command
+          if [ "$CMD" != "restore" ] && [ "$CMD" != "build" ] && [ "$CMD" != "test" ] && [ "$CMD" != "pack" ] && [ "$CMD" != "push" ]; then
             echo "Unsupported command: $CMD"
             exit 1
           fi
