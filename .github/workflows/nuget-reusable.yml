@@ -18,9 +18,6 @@ on:
       configuration:
         required: false
         type: string
-      packDirectory:
-        required: false    # keep required
-        type: string
       packagesToPush:
         required: false   # keep required
         type: string
