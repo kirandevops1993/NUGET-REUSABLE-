@@ -21,9 +21,6 @@ on:
       packagesToPush:
         required: false
         type: string
-      packDirectory:
-        required: false
-        type: string
 
 jobs:
   dotnet:
@@ -44,7 +41,7 @@ jobs:
           elif [ "${{ inputs.command }}" = "test" ]; then
             dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
           elif [ "${{ inputs.command }}" = "pack" ]; then
-            dotnet pack "${{ inputs.projects }}" --configuration "${{ inputs.configuration }}" -o "${{ inputs.packDirectory }}"
+            dotnet pack "${{ inputs.projects }}" --configuration "${{ inputs.configuration }}" -o ./nupkgs
           elif [ "${{ inputs.command }}" = "push" ]; then
             dotnet nuget push "${{ inputs.packagesToPush }}" --source https://api.nuget.org/v3/index.json
           else
