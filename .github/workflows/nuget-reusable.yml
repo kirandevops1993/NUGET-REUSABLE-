@@ -66,6 +66,27 @@ on:
       nuGetAdditionalArgs:
         required: true
         type: string
+      packagesToPack:
+        required: false
+        type: string
+      versioningScheme:
+        required: false
+        type: string
+      includeReferencedProjects:
+        required: false
+        type: boolean
+      packTimezone:
+        required: false
+        type: string
+      toolPackage:
+        required: false
+        type: boolean
+      basePath:
+        required: false
+        type: string
+      verbosityPack:
+        required: false
+        type: string
 
       # Publisher Inputs
       nuGetFeedType:
@@ -77,6 +98,16 @@ on:
       skipDuplicate:
         required: true
         type: boolean
+
+      # Custom Command Inputs
+      arguments:
+        required: false
+        type: string
+
+      # General Command
+      command:
+        required: true
+        type: string
 
     secrets:
       apiKey:
@@ -95,6 +126,7 @@ jobs:
         shell: powershell
 
       - name: Restore NuGet Packages
+        if: inputs.command == 'restore'
         run: |
           ./nuget.exe restore "${{ inputs.solution }}" `
             -ConfigFile "${{ inputs.nugetConfigPath }}" `
@@ -106,7 +138,7 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+          $msbuildPath = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe"
           if (!(Test-Path $msbuildPath)) {
             Write-Error "MSBuild.exe not found at $msbuildPath"
             exit 1
@@ -115,18 +147,18 @@ jobs:
         shell: powershell
 
       - name: Build the Project
+        if: inputs.command == 'pack'
         run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
+          & "${{ steps.msbuild-path.outputs.msbuildPath }}" "${{ inputs.searchPattern }}" `
             /p:Configuration=${{ inputs.configurationToPack }} `
             /p:${{ inputs.buildProperties }} `
             /verbosity:${{ inputs.verbosity }}
         shell: powershell
 
       - name: Pack NuGet Packages using MSBuild
+        if: inputs.command == 'pack'
         run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
+          & "${{ steps.msbuild-path.outputs.msbuildPath }}" "${{ inputs.searchPattern }}" `
             /t:Pack `
             /p:Configuration=${{ inputs.configurationToPack }} `
             /p:PackageOutputPath="${{ inputs.outputdir }}" `
