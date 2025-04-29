@@ -19,7 +19,10 @@ on:
         required: false
         type: string
       packagesToPush:
-        required: false   # keep required
+        required: false
+        type: string
+      packDirectory:
+        required: false
         type: string
 
 jobs:
@@ -32,22 +35,19 @@ jobs:
         with:
           dotnet-version: '9.0.201'
 
-      - name: Restore
-        if: ${{ inputs.command == 'restore' }}
-        run: dotnet restore ${{ inputs.projects }} --configfile ${{ inputs.nugetConfigPath }}
-
-      - name: Build
-        if: ${{ inputs.command == 'build' }}
-        run: dotnet build ${{ inputs.projects }} ${{ inputs.arguments }}
-
-      - name: Test
-        if: ${{ inputs.command == 'test' }}
-        run: dotnet test ${{ inputs.projects }} ${{ inputs.arguments }} --logger trx
-
-      - name: Pack
-        if: ${{ inputs.command == 'pack' }}
-        run: dotnet pack ${{ inputs.projects }} --configuration ${{ inputs.configuration }} -o ${{ inputs.packDirectory }}
-
-      - name: Push
-        if: ${{ inputs.command == 'push' }}
-        run: dotnet nuget push ${{ inputs.packagesToPush }} --source https://api.nuget.org/v3/index.json
+      - name: Execute Dotnet Task
+        run: |
+          if [ "${{ inputs.command }}" = "restore" ]; then
+            dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
+          elif [ "${{ inputs.command }}" = "build" ]; then
+            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
+          elif [ "${{ inputs.command }}" = "test" ]; then
+            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
+          elif [ "${{ inputs.command }}" = "pack" ]; then
+            dotnet pack "${{ inputs.projects }}" --configuration "${{ inputs.configuration }}" -o "${{ inputs.packDirectory }}"
+          elif [ "${{ inputs.command }}" = "push" ]; then
+            dotnet nuget push "${{ inputs.packagesToPush }}" --source https://api.nuget.org/v3/index.json
+          else
+            echo "Unsupported command: ${{ inputs.command }}"
+            exit 1
+          fi
