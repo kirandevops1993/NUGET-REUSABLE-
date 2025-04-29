@@ -18,12 +18,6 @@ on:
       configuration:
         required: false
         type: string
-      restoreArguments:
-        required: true
-        type: string
-      restoreDirectory:
-        required: true
-        type: string
       verbosityRestore:
         required: false
         type: string
@@ -61,7 +55,6 @@ on:
 jobs:
   dotnet:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -71,25 +64,20 @@ jobs:
 
       - name: Restore
         if: ${{ inputs.command == 'restore' }}
-        run: |
-          dotnet restore ${{ inputs.projects }} ${{ inputs.restoreArguments }} --configfile ${{ inputs.nugetConfigPath }} --packages ${{ inputs.restoreDirectory }} --verbosity ${{ inputs.verbosityRestore }}
+        run: dotnet restore ${{ inputs.projects }} --configfile ${{ inputs.nugetConfigPath }}
 
       - name: Build
         if: ${{ inputs.command == 'build' }}
-        run: |
-          dotnet build ${{ inputs.projects }} ${{ inputs.arguments }}
+        run: dotnet build ${{ inputs.projects }} ${{ inputs.arguments }}
 
       - name: Test
         if: ${{ inputs.command == 'test' }}
-        run: |
-          dotnet test ${{ inputs.projects }} ${{ inputs.arguments }} --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
+        run: dotnet test ${{ inputs.projects }} ${{ inputs.arguments }} --logger trx
 
       - name: Pack
         if: ${{ inputs.command == 'pack' }}
-        run: |
-          dotnet pack ${{ inputs.projects }} --configuration ${{ inputs.configuration }} -o ${{ inputs.packDirectory || './nupkgs' }} ${{ inputs.buildProperties }} --verbosity ${{ inputs.verbosityPack }} ${{ inputs.includesymbols && '--include-symbols' || '' }} ${{ inputs.includesource && '--include-source' || '' }}
+        run: dotnet pack ${{ inputs.projects }} --configuration ${{ inputs.configuration }} -o ${{ inputs.packDirectory }}
 
       - name: Push
         if: ${{ inputs.command == 'push' }}
-        run: |
-          dotnet nuget push ${{ inputs.packagesToPush }} --source https://api.nuget.org/v3/index.json --timeout ${{ inputs.requestTimeout }}
+        run: dotnet nuget push ${{ inputs.packagesToPush }} --source https://api.nuget.org/v3/index.json
