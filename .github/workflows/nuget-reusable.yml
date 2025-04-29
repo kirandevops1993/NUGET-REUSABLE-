@@ -19,10 +19,10 @@ on:
         required: false
         type: string
       verbosityRestore:
-        required: false
+        required: true
         type: string
       buildProperties:
-        required: false
+        required: true
         type: string
       verbosityPack:
         required: false
