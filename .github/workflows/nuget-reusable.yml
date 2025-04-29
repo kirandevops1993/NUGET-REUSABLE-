@@ -34,17 +34,25 @@ jobs:
 
       - name: Execute Dotnet Task
         run: |
-          if [ "${{ inputs.command }}" = "restore" ]; then
-            dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
-          elif [ "${{ inputs.command }}" = "build" ]; then
+          echo "Run CMD=\"${{ inputs.command }}\""
+          CMD="${{ inputs.command }}"
+
+          if [ "$CMD" = "restore" ]; then
+            dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath}"
+
+          elif [ "$CMD" = "build" ]; then
             dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
-          elif [ "${{ inputs.command }}" = "test" ]; then
+
+          elif [ "$CMD" = "test" ]; then
             dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
-          elif [ "${{ inputs.command }}" = "pack" ]; then
+
+          elif [ "$CMD" = "pack" ]; then
             dotnet pack "${{ inputs.projects }}" --configuration "${{ inputs.configuration }}" -o ./nupkgs
-          elif [ "${{ inputs.command }}" = "push" ]; then
-            dotnet nuget push "${{ inputs.packagesToPush }}" --source https://api.nuget.org/v3/index.json
+
+          elif [ "$CMD" = "push" ]; then
+            dotnet nuget push "${{ inputs.packagesToPush }}" --source "https://api.nuget.org/v3/index.json"
+
           else
-            echo "Unsupported command: ${{ inputs.command }}"
+            echo "Unsupported command: $CMD"
             exit 1
           fi
