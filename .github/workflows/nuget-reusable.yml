@@ -12,7 +12,13 @@ on:
       arguments:
         required: false
         type: string
+      feedsToUse:
+        required: false
+        type: string
       nugetConfigPath:
+        required: false
+        type: string
+      packagesToPack:
         required: false
         type: string
       configuration:
@@ -21,67 +27,7 @@ on:
       packagesToPush:
         required: false
         type: string
-      custom:
-        required: false
-        type: string
-      restoreArguments:
-        required: false
-        type: string
-      testRunTitle:
-        required: false
-        type: string
-      modifyOutputPath:
-        required: false
-        type: string
-      packDirectory:
-        required: false
-        type: string
-      nobuild:
-        required: false
-        type: string
-      includesymbols:
-        required: false
-        type: string
-      includesource:
-        required: false
-        type: string
-      requestTimeout:
-        required: false
-        type: string
-      noCache:
-        required: false
-        type: string
-      restoreDirectory:
-        required: false
-        type: string
-      verbosityRestore:
-        required: false
-        type: string
-      publishPackageMetadata:
-        required: false
-        type: string
-      versioningScheme:
-        required: false
-        type: string
-      versionEnvVar:
-        required: false
-        type: string
-      majorVersion:
-        required: false
-        type: string
-      minorVersion:
-        required: false
-        type: string
-      patchVersion:
-        required: false
-        type: string
-      buildProperties:
-        required: false
-        type: string
-      verbosityPack:
-        required: false
-        type: string
-      workingDirectory:
+      nuGetFeedType:
         required: false
         type: string
 
@@ -89,71 +35,35 @@ jobs:
   dotnet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-dotnet@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.201'
+          dotnet-version: '8.0.x'
 
-      - name: Execute Dotnet Task
+      - name: Run dotnet ${{ inputs.command }}
         run: |
-          echo "Running command: ${{ inputs.command }}"
-
-          cd "${{ inputs.workingDirectory || '.' }}"
-
           CMD="${{ inputs.command }}"
-          PROJECTS="${{ inputs.projects || '**/*.csproj' }}"
-          CONFIGFILE="${{ inputs.nugetConfigPath || '' }}"
-          ARGUMENTS="${{ inputs.arguments || '' }}"
-          CONFIGURATION="${{ inputs.configuration || 'Release' }}"
-          PACKAGES="${{ inputs.packagesToPush || './nupkgs/*.nupkg' }}"
-          CUSTOM="${{ inputs.custom || '' }}"
-          RESTOREARGS="${{ inputs.restoreArguments || '' }}"
-          TESTTITLE="${{ inputs.testRunTitle || '' }}"
-          MODIFYOUTPUT="${{ inputs.modifyOutputPath || '' }}"
-          PACKDIR="${{ inputs.packDirectory || './nupkgs' }}"
-          NOBUILD="${{ inputs.nobuild || '' }}"
-          INCLUDESYMBOLS="${{ inputs.includesymbols || '' }}"
-          INCLUDESOURCE="${{ inputs.includesource || '' }}"
-          REQUESTTIMEOUT="${{ inputs.requestTimeout || '' }}"
-          NOCACHE="${{ inputs.noCache || '' }}"
-          RESTOREDIR="${{ inputs.restoreDirectory || '' }}"
-          VERBOSITYRESTORE="${{ inputs.verbosityRestore || '' }}"
-          PUBLISHPACKAGEMETA="${{ inputs.publishPackageMetadata || '' }}"
-          VERSIONING="${{ inputs.versioningScheme || '' }}"
-          VERSIONENV="${{ inputs.versionEnvVar || '' }}"
-          MAJORVER="${{ inputs.majorVersion || '' }}"
-          MINORVER="${{ inputs.minorVersion || '' }}"
-          PATCHVER="${{ inputs.patchVersion || '' }}"
-          BUILDPARAMS="${{ inputs.buildProperties || '' }}"
-          VERBOSITYPACK="${{ inputs.verbosityPack || '' }}"
-
+          
           if [ "$CMD" = "restore" ]; then
-            echo "Restoring..."
-            dotnet restore "$PROJECTS" --configfile "$CONFIGFILE" $RESTOREARGS --no-cache="$NOCACHE" --verbosity "$VERBOSITYRESTORE" --packages "$RESTOREDIR"
-          fi
-
-          if [ "$CMD" = "build" ]; then
-            echo "Building..."
-            dotnet build "$PROJECTS" $ARGUMENTS $CUSTOM -p:"$BUILDPARAMS"
-          fi
-
-          if [ "$CMD" = "test" ]; then
-            echo "Testing..."
-            dotnet test "$PROJECTS" $ARGUMENTS $CUSTOM --logger trx --results-directory "./TestResults" --runsettings "$TESTTITLE" $NOBUILD
-          fi
-
-          if [ "$CMD" = "pack" ]; then
-            echo "Packing..."
-            dotnet pack "$PROJECTS" --configuration "$CONFIGURATION" -o "$PACKDIR" $CUSTOM --include-symbols "$INCLUDESYMBOLS" --include-source "$INCLUDESOURCE" --version-suffix "$MAJORVER.$MINORVER.$PATCHVER" -p:"$VERSIONING;$VERSIONENV" --verbosity "$VERBOSITYPACK"
-          fi
-
-          if [ "$CMD" = "push" ]; then
-            echo "Pushing packages..."
-            dotnet nuget push "$PACKAGES" --source "https://api.nuget.org/v3/index.json" --timeout "$REQUESTTIMEOUT" --no-symbols "$PUBLISHPACKAGEMETA"
-          fi
-
-          if [ "$CMD" != "restore" ] && [ "$CMD" != "build" ] && [ "$CMD" != "test" ] && [ "$CMD" != "pack" ] && [ "$CMD" != "push" ]; then
+            dotnet restore "${{ inputs.projects }}" --configfile "${{ inputs.nugetConfigPath }}"
+          
+          elif [ "$CMD" = "build" ]; then
+            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
+          
+          elif [ "$CMD" = "test" ]; then
+            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} --logger trx
+          
+          elif [ "$CMD" = "pack" ]; then
+            dotnet pack ${{ inputs.packagesToPack }} --configuration ${{ inputs.configuration }} -o ./nupkgs
+          
+          elif [ "$CMD" = "push" ]; then
+            dotnet nuget push "${{ inputs.packagesToPush }}" \
+              --source "https://api.nuget.org/v3/index.json"
+          
+          else
             echo "Unsupported command: $CMD"
             exit 1
           fi
