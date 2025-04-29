@@ -107,7 +107,7 @@ jobs:
           CONFIGFILE="${{ inputs.nugetConfigPath || '' }}"
           ARGUMENTS="${{ inputs.arguments || '' }}"
           CONFIGURATION="${{ inputs.configuration || 'Release' }}"
-          PACKAGES="${{ inputs.packagesToPush || './nupkgs/*.nupkg' }})"
+          PACKAGES="${{ inputs.packagesToPush || './nupkgs/*.nupkg' }}"
           CUSTOM="${{ inputs.custom || '' }}"
           RESTOREARGS="${{ inputs.restoreArguments || '' }}"
           TESTTITLE="${{ inputs.testRunTitle || '' }}"
