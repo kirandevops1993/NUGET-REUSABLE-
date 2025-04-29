@@ -21,7 +21,6 @@ on:
       packagesToPush:
         required: false
         type: string
-      # New inputs
       custom:
         required: false
         type: string
