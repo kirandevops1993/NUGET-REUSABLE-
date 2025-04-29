@@ -3,36 +3,35 @@ name: Reusable Dotnet Workflow
 on:
   workflow_call:
     inputs:
-      command: { required: true, type: string }
-      projects: { required: false, type: string }
-      arguments: { required: false, type: string }
-      feedsToUse: { required: false, type: string }
-      nugetConfigPath: { required: false, type: string }
-      packagesToPack: { required: false, type: string }
-      configuration: { required: false, type: string }
-      packagesToPush: { required: false, type: string }
-      nuGetFeedType: { required: false, type: string }
-      custom: { required: false, type: string }
-      restoreArguments: { required: false, type: string }
-      testRunTitle: { required: false, type: string }
-      modifyOutputPath: { required: false, type: string }
-      packDirectory: { required: false, type: string }
-      nobuild: { required: false, type: string }
-      includesymbols: { required: false, type: string }
-      includesource: { required: false, type: string }
-      requestTimeout: { required: false, type: string }
-      noCache: { required: false, type: string }
-      restoreDirectory: { required: false, type: string }
-      verbosityRestore: { required: false, type: string }
-      publishPackageMetadata: { required: false, type: string }
-      versioningScheme: { required: false, type: string }
-      versionEnvVar: { required: false, type: string }
-      majorVersion: { required: false, type: string }
-      minorVersion: { required: false, type: string }
-      patchVersion: { required: false, type: string }
-      buildProperties: { required: false, type: string }
-      verbosityPack: { required: false, type: string }
-      workingDirectory: { required: false, type: string }
+      command: { required: true }
+      projects: { required: false }
+      arguments: { required: false }
+      feedsToUse: { required: false }
+      nugetConfigPath: { required: false }
+      packagesToPack: { required: false }
+      configuration: { required: false }
+      nuGetFeedType: { required: false }
+      custom: { required: false }
+      restoreArguments: { required: false }
+      testRunTitle: { required: false }
+      modifyOutputPath: { required: false }
+      packDirectory: { required: false }
+      nobuild: { required: false }
+      includesymbols: { required: false }
+      includesource: { required: false }
+      requestTimeout: { required: false }
+      noCache: { required: false }
+      restoreDirectory: { required: false }
+      verbosityRestore: { required: false }
+      publishPackageMetadata: { required: false }
+      versioningScheme: { required: false }
+      versionEnvVar: { required: false }
+      majorVersion: { required: false }
+      minorVersion: { required: false }
+      patchVersion: { required: false }
+      buildProperties: { required: false }
+      verbosityPack: { required: false }
+      workingDirectory: { required: false }
 
 jobs:
   dotnet:
@@ -58,37 +57,27 @@ jobs:
           echo "Custom Flag: ${{ inputs.custom }}"
 
           if [ "$CMD" = "restore" ]; then
-            dotnet restore "${{ inputs.projects }}" `
-              --configfile "${{ inputs.nugetConfigPath }}" `
-              ${{ inputs.restoreArguments }} `
-              --no-cache="${{ inputs.noCache }}" `
-              --packages "${{ inputs.restoreDirectory }}" `
+            dotnet restore "${{ inputs.projects }}" \
+              --configfile "${{ inputs.nugetConfigPath }}" \
+              ${{ inputs.restoreArguments }} \
+              --no-cache="${{ inputs.noCache }}" \
+              --packages "${{ inputs.restoreDirectory }}" \
               --verbosity "${{ inputs.verbosityRestore }}"
 
           elif [ "$CMD" = "build" ]; then
             dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
 
           elif [ "$CMD" = "test" ]; then
-            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} `
+            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} \
               --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
 
           elif [ "$CMD" = "pack" ]; then
-            dotnet pack "${{ inputs.packagesToPack }}" `
-              --configuration "${{ inputs.configuration }}" `
-              --output "${{ inputs.packDirectory }}" `
-              --no-build="${{ inputs.nobuild }}" `
-              --include-symbols="${{ inputs.includesymbols }}" `
-              --include-source="${{ inputs.includesource }}" `
-              --property "${{ inputs.buildProperties }}" `
+            dotnet pack "${{ inputs.packagesToPack }}" \
+              --configuration "${{ inputs.configuration }}" \
+              --output "${{ inputs.packDirectory }}" \
+              --no-build="${{ inputs.nobuild }}" \
+              --include-symbols="${{ inputs.includesymbols }}" \
+              --include-source="${{ inputs.includesource }}" \
+              --property "${{ inputs.buildProperties }}" \
               --verbosity "${{ inputs.verbosityPack }}"
-
-          elif [ "$CMD" = "push" ]; then
-            dotnet nuget push "${{ inputs.packagesToPush }}" `
-              --source "https://api.nuget.org/v3/index.json" `
-              --timeout "${{ inputs.requestTimeout }}" `
-              --api-key ${{ secrets.NUGET_API_KEY }}
-
-          else
-            echo "Unsupported command: $CMD"
-            exit 1
           fi
