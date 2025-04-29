@@ -1,10 +1,13 @@
-name: .NET Reusable Build, Test, and Pack
+name: Reusable Dotnet Workflow
 
 on:
   workflow_call:
     inputs:
-      projects:
+      command:
         required: true
+        type: string
+      projects:
+        required: false
         type: string
       arguments:
         required: false
@@ -12,52 +15,59 @@ on:
       nugetConfigPath:
         required: false
         type: string
-      packagesToPack:
-        required: true
-        type: string
       configuration:
-        required: true
+        required: false
         type: string
-      nuGetFeedType:
+      packagesToPush:
         required: false
         type: string
 
 jobs:
-  build-test-pack:
+  dotnet:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x' # or customize as needed
+          dotnet-version: '9.0.201'
 
-      - name: Restore dependencies
+      - name: Execute Dotnet Task
         run: |
-          dotnet restore ${{ inputs.projects }} \
-            ${{ inputs.arguments }} \
-            ${{ inputs.nugetConfigPath && format('--configfile {0}', inputs.nugetConfigPath) }}
+          echo "Run CMD=\"${{ inputs.command }}\""
+          CMD="${{ inputs.command }}"
 
-      - name: Build
-        run: |
-          dotnet build ${{ inputs.projects }} \
-            --configuration ${{ inputs.configuration }} \
-            --no-restore \
-            ${{ inputs.arguments }}
+          PROJECTS="${{ inputs.projects || '**/*.csproj' }}"
+          CONFIGFILE="${{ inputs.nugetConfigPath || '' }}"
+          ARGUMENTS="${{ inputs.arguments || '' }}"
+          CONFIGURATION="${{ inputs.configuration || 'Release' }}"
+          PACKAGES="${{ inputs.packagesToPush || './nupkgs/*.nupkg' }}"
 
-      - name: Test
-        run: |
-          dotnet test ${{ inputs.projects }} \
-            --configuration ${{ inputs.configuration }} \
-            --no-build \
-            ${{ inputs.arguments }}
+          if [ "$CMD" = "restore" ]; then
+            echo "Restoring project with ${PROJECTS} and config file ${CONFIGFILE}"
+            dotnet restore "$PROJECTS" --configfile "$CONFIGFILE"
+          fi
 
-      - name: Pack
-        run: |
-          dotnet pack ${{ inputs.packagesToPack }} \
-            --configuration ${{ inputs.configuration }} \
-            --no-build \
-            ${{ inputs.arguments }}
+          if [ "$CMD" = "build" ]; then
+            echo "Building project with ${PROJECTS} and arguments ${ARGUMENTS}"
+            dotnet build "$PROJECTS" $ARGUMENTS
+          fi
+
+          if [ "$CMD" = "test" ]; then
+            echo "Running tests on ${PROJECTS} with arguments ${ARGUMENTS}"
+            dotnet test "$PROJECTS" $ARGUMENTS --logger trx
+          fi
+
+          if [ "$CMD" = "pack" ]; then
+            echo "Packing project with ${PROJECTS} and configuration ${CONFIGURATION}"
+            dotnet pack "$PROJECTS" --configuration "$CONFIGURATION" -o ./nupkgs
+          fi
+
+          if [ "$CMD" = "push" ]; then
+            echo "Pushing packages: ${PACKAGES}"
+            dotnet nuget push "$PACKAGES" --source "https://api.nuget.org/v3/index.json"
+          fi
+
+          if [ "$CMD" != "restore" ] && [ "$CMD" != "build" ] && [ "$CMD" != "test" ] && [ "$CMD" != "pack" ] && [ "$CMD" != "push" ]; then
+            echo "Unsupported command: $CMD"
+            exit 1
