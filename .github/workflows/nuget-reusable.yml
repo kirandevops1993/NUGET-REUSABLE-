@@ -18,39 +18,12 @@ on:
       configuration:
         required: false
         type: string
-      verbosityRestore:
-        required: true
-        type: string
-      buildProperties:
-        required: true
-        type: string
-      verbosityPack:
-        required: false
-        type: string
-      workingDirectory:
-        required: false
-        type: string
       packDirectory:
-        required: false
-        type: string
-      includesymbols:
-        required: false
-        type: boolean
-      includesource:
-        required: false
-        type: boolean
-      testRunTitle:
         required: false
         type: string
       packagesToPush:
         required: false
         type: string
-      requestTimeout:
-        required: false
-        type: string
-      noCache:
-        required: false
-        type: boolean
 
 jobs:
   dotnet:
