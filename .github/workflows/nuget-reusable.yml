@@ -19,10 +19,10 @@ on:
         required: false
         type: string
       restoreArguments:
-        required: false
+        required: true
         type: string
       restoreDirectory:
-        required: false
+        required: true
         type: string
       verbosityRestore:
         required: false
