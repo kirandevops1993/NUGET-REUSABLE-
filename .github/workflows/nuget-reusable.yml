@@ -71,7 +71,7 @@ jobs:
       - name: Restore
         if: ${{ inputs.command == 'restore' }}
         run: |
-          dotnet restore ${{ inputs.projects }} ${{ inputs.restoreArguments }} --configfile ${{ inputs.nugetConfigPath }} --verbosity ${{ inputs.verbosityRestore }} --packages ${{ inputs.restoreDirectory }}
+          dotnet restore ${{ inputs.projects }} ${{ inputs.restoreArguments }} --configfile ${{ inputs.nugetConfigPath }} --packages ${{ inputs.restoreDirectory }} --verbosity ${{ inputs.verbosityRestore }}
 
       - name: Build
         if: ${{ inputs.command == 'build' }}
@@ -91,4 +91,4 @@ jobs:
       - name: Push
         if: ${{ inputs.command == 'push' }}
         run: |
-          dotnet nuget push ${{ inputs.packagesToPush }} --source https://api.nuget.org/v3/index.json --skip-duplicate --timeout ${{ inputs.requestTimeout }}
+          dotnet nuget push ${{ inputs.packagesToPush }} --source https://api.nuget.org/v3/index.json --timeout ${{ inputs.requestTimeout }}
