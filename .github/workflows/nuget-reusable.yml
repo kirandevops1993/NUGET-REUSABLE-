@@ -21,6 +21,69 @@ on:
       packagesToPush:
         required: false
         type: string
+      custom:
+        required: false
+        type: string
+      restoreArguments:
+        required: false
+        type: string
+      testRunTitle:
+        required: false
+        type: string
+      modifyOutputPath:
+        required: false
+        type: string
+      packDirectory:
+        required: false
+        type: string
+      nobuild:
+        required: false
+        type: boolean
+      includesymbols:
+        required: false
+        type: boolean
+      includesource:
+        required: false
+        type: boolean
+      requestTimeout:
+        required: false
+        type: string
+      noCache:
+        required: false
+        type: boolean
+      restoreDirectory:
+        required: false
+        type: string
+      verbosityRestore:
+        required: false
+        type: string
+      publishPackageMetadata:
+        required: false
+        type: string
+      versioningScheme:
+        required: false
+        type: string
+      versionEnvVar:
+        required: false
+        type: string
+      majorVersion:
+        required: false
+        type: string
+      minorVersion:
+        required: false
+        type: string
+      patchVersion:
+        required: false
+        type: string
+      buildProperties:
+        required: false
+        type: string
+      verbosityPack:
+        required: false
+        type: string
+      workingDirectory:
+        required: false
+        type: string
 
 jobs:
   dotnet:
@@ -35,39 +98,68 @@ jobs:
       - name: Execute Dotnet Task
         run: |
           echo "Run CMD=\"${{ inputs.command }}\""
-          CMD="${{ inputs.command }}"
+          cd "${{ inputs.workingDirectory || '.' }}"
 
+          CMD="${{ inputs.command }}"
           PROJECTS="${{ inputs.projects || '**/*.csproj' }}"
           CONFIGFILE="${{ inputs.nugetConfigPath || '' }}"
           ARGUMENTS="${{ inputs.arguments || '' }}"
           CONFIGURATION="${{ inputs.configuration || 'Release' }}"
           PACKAGES="${{ inputs.packagesToPush || './nupkgs/*.nupkg' }}"
+          CUSTOM="${{ inputs.custom || '' }}"
+          RESTOREARGS="${{ inputs.restoreArguments || '' }}"
+          TEST_TITLE="${{ inputs.testRunTitle || '' }}"
+          MODIFY_OUTPUT="${{ inputs.modifyOutputPath || '' }}"
+          PACK_DIR="${{ inputs.packDirectory || './nupkgs' }}"
+          NOBUILD="${{ inputs.nobuild == true && '--no-build' || '' }}"
+          INCLUDESYMBOLS="${{ inputs.includesymbols == true && '--include-symbols' || '' }}"
+          INCLUDESOURCE="${{ inputs.includesource == true && '--include-source' || '' }}"
+          REQUEST_TIMEOUT="${{ inputs.requestTimeout || '' }}"
+          NOCACHE="${{ inputs.noCache == true && '--no-cache' || '' }}"
+          RESTORE_DIR="${{ inputs.restoreDirectory || '' }}"
+          VERBOSITY_RESTORE="${{ inputs.verbosityRestore || '' }}"
+          PUBLISH_METADATA="${{ inputs.publishPackageMetadata || '' }}"
+          VERSIONING_SCHEME="${{ inputs.versioningScheme || '' }}"
+          VERSION_ENV_VAR="${{ inputs.versionEnvVar || '' }}"
+          MAJOR_VERSION="${{ inputs.majorVersion || '' }}"
+          MINOR_VERSION="${{ inputs.minorVersion || '' }}"
+          PATCH_VERSION="${{ inputs.patchVersion || '' }}"
+          BUILD_PROPERTIES="${{ inputs.buildProperties || '' }}"
+          VERBOSITY_PACK="${{ inputs.verbosityPack || '' }}"
 
           if [ "$CMD" = "restore" ]; then
-            echo "Restoring project with ${PROJECTS} and config file ${CONFIGFILE}"
-            dotnet restore "$PROJECTS" --configfile "$CONFIGFILE"
+            echo "Restoring project..."
+            dotnet restore "$PROJECTS" --configfile "$CONFIGFILE" $RESTOREARGS $NOCACHE --packages "$RESTORE_DIR" --verbosity "$VERBOSITY_RESTORE" $CUSTOM
           fi
 
           if [ "$CMD" = "build" ]; then
-            echo "Building project with ${PROJECTS} and arguments ${ARGUMENTS}"
-            dotnet build "$PROJECTS" $ARGUMENTS
+            echo "Building project..."
+            dotnet build "$PROJECTS" $ARGUMENTS --configuration "$CONFIGURATION" $CUSTOM
           fi
 
           if [ "$CMD" = "test" ]; then
-            echo "Running tests on ${PROJECTS} with arguments ${ARGUMENTS}"
-            dotnet test "$PROJECTS" $ARGUMENTS --logger trx
+            echo "Running tests..."
+            dotnet test "$PROJECTS" $ARGUMENTS --logger "trx;LogFileName=${TEST_TITLE:-testresults}.trx" $CUSTOM
           fi
 
           if [ "$CMD" = "pack" ]; then
-            echo "Packing project with ${PROJECTS} and configuration ${CONFIGURATION}"
-            dotnet pack "$PROJECTS" --configuration "$CONFIGURATION" -o ./nupkgs
+            echo "Packing project..."
+            VERSION=""
+            if [ -n "$VERSION_ENV_VAR" ]; then
+              VERSION="${!VERSION_ENV_VAR}"
+            elif [ -n "$MAJOR_VERSION" ] && [ -n "$MINOR_VERSION" ] && [ -n "$PATCH_VERSION" ]; then
+              VERSION="$MAJOR_VERSION.$MINOR_VERSION.$PATCH_VERSION"
+            fi
+
+            dotnet pack "$PROJECTS" --output "$PACK_DIR" --configuration "$CONFIGURATION" $NOBUILD $INCLUDESYMBOLS $INCLUDESOURCE --version-suffix "$VERSION" --verbosity "$VERBOSITY_PACK" $BUILD_PROPERTIES $CUSTOM
           fi
 
           if [ "$CMD" = "push" ]; then
-            echo "Pushing packages: ${PACKAGES}"
-            dotnet nuget push "$PACKAGES" --source "https://api.nuget.org/v3/index.json"
+            echo "Pushing packages..."
+            dotnet nuget push "$PACKAGES" --source "https://api.nuget.org/v3/index.json" --timeout "$REQUEST_TIMEOUT" $CUSTOM
           fi
 
           if [ "$CMD" != "restore" ] && [ "$CMD" != "build" ] && [ "$CMD" != "test" ] && [ "$CMD" != "pack" ] && [ "$CMD" != "push" ]; then
             echo "Unsupported command: $CMD"
             exit 1
+          fi
