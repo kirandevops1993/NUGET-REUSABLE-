@@ -134,8 +134,7 @@ jobs:
             -Verbosity ${{ inputs.verbosity }} `
             -NonInteractive
         shell: powershell
-
-      # ✅ NEW: Ensure csproj restore to generate project.assets.json
+        
       - name: Dotnet Restore (for pack)
         if: inputs.command == 'pack'
         run: dotnet restore ${{ inputs.searchPattern }} --configfile "${{ inputs.nugetConfigPath }}"
