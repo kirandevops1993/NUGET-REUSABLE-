@@ -105,13 +105,13 @@ jobs:
           dotnet-version: '9.0.201'
 
       - name: Set version env var (optional use)
-        run: echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
         shell: bash
+        run: echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
 
       - name: Run dotnet ${{ inputs.command }}
         shell: bash
         run: |
-          if [ "${{ inputs.command }}" = "restore" ]; then
+          if [[ "${{ inputs.command }}" == "restore" ]]; then
             dotnet restore "${{ inputs.projects }}" \
               --configfile "${{ inputs.nugetConfigPath }}" \
               ${{ inputs.restoreArguments }} \
@@ -119,14 +119,14 @@ jobs:
               --packages "${{ inputs.restoreDirectory }}" \
               --verbosity "${{ inputs.verbosityRestore }}"
 
-          elif [ "${{ inputs.command }}" = "build" ]; then
+          elif [[ "${{ inputs.command }}" == "build" ]]; then
             dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
 
-          elif [ "${{ inputs.command }}" = "test" ]; then
+          elif [[ "${{ inputs.command }}" == "test" ]]; then
             dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} \
               --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
 
-          elif [ "${{ inputs.command }}" = "pack" ]; then
+          elif [[ "${{ inputs.command }}" == "pack" ]]; then
             dotnet pack "${{ inputs.packagesToPack }}" \
               --configuration "${{ inputs.configuration }}" \
               --output "${{ inputs.packDirectory }}" \
@@ -135,3 +135,4 @@ jobs:
               --include-source="${{ inputs.includesource }}" \
               --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
               --verbosity "${{ inputs.verbosityPack }}"
+          fi
