@@ -3,87 +3,33 @@ name: Reusable Dotnet Workflow
 on:
   workflow_call:
     inputs:
-      command:
-        required: true
-        type: string
-      projects:
-        required: false
-        type: string
-      arguments:
-        required: false
-        type: string
-      nugetConfigPath:
-        required: false
-        type: string
-      packagesToPack:
-        required: false
-        type: string
-      configuration:
-        required: true
-        type: string
-      custom:
-        required: true
-        type: boolean
-      restoreArguments:
-        required: false
-        type: string
-      testRunTitle:
-        required: false
-        type: string
-      modifyOutputPath:
-        required: true
-        type: boolean
-      packDirectory:
-        required: true
-        type: string
-      nobuild:
-        required: true
-        type: boolean
-      includesymbols:
-        required: true
-        type: boolean
-      includesource:
-        required: true
-        type: boolean
-      requestTimeout:
-        required: false
-        type: string
-      noCache:
-        required: true
-        type: boolean
-      restoreDirectory:
-        required: true
-        type: string
-      verbosityRestore:
-        required: true
-        type: string
-      sensitiveAlphanumericInfo1:
-        required: true
-        type: string
-      versioningScheme:
-        required: false
-        type: string
-      versionEnvVar:
-        required: true
-        type: string
-      majorVersion:
-        required: true
-        type: string
-      minorVersion:
-        required: true
-        type: string
-      patchVersion:
-        required: true
-        type: string
-      buildProperties:
-        required: true
-        type: string
-      verbosityPack:
-        required: true
-        type: string
-      workingDirectory:
-        required: true
-        type: string
+      command: { required: true, type: string }
+      projects: { required: false, type: string }
+      arguments: { required: false, type: string }
+      nugetConfigPath: { required: false, type: string }
+      packagesToPack: { required: false, type: string }
+      configuration: { required: true, type: string }
+      custom: { required: true, type: boolean }
+      restoreArguments: { required: false, type: string }
+      testRunTitle: { required: false, type: string }
+      modifyOutputPath: { required: true, type: boolean }
+      packDirectory: { required: true, type: string }
+      nobuild: { required: true, type: boolean }
+      includesymbols: { required: true, type: boolean }
+      includesource: { required: true, type: boolean }
+      requestTimeout: { required: false, type: string }
+      noCache: { required: true, type: boolean }
+      restoreDirectory: { required: true, type: string }
+      verbosityRestore: { required: true, type: string }
+      sensitiveAlphanumericInfo1: { required: true, type: string }
+      versioningScheme: { required: false, type: string }
+      versionEnvVar: { required: true, type: string }
+      majorVersion: { required: true, type: string }
+      minorVersion: { required: true, type: string }
+      patchVersion: { required: true, type: string }
+      buildProperties: { required: true, type: string }
+      verbosityPack: { required: true, type: string }
+      workingDirectory: { required: true, type: string }
 
 jobs:
   dotnet:
