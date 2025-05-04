@@ -92,6 +92,9 @@ jobs:
       run:
         working-directory: ${{ inputs.workingDirectory }}
 
+    env:
+      VERSION: ${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -101,10 +104,8 @@ jobs:
         with:
           dotnet-version: '9.0.201'
 
-      - name: Set version variable
-        run: |
-          VERSION="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}"
-          echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
+      - name: Set version env var (optional use)
+        run: echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
 
       - name: Run dotnet ${{ inputs.command }}
         run: |
@@ -130,5 +131,5 @@ jobs:
               --no-build "${{ inputs.nobuild }}" \
               --include-symbols "${{ inputs.includesymbols }}" \
               --include-source "${{ inputs.includesource }}" \
-              --property "Version=${{ env.${{ inputs.versionEnvVar }} }};SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
+              --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
               --verbosity "${{ inputs.verbosityPack }}"
