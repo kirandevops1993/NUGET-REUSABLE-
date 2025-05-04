@@ -1,4 +1,3 @@
-# .github/workflows/nuget-reusable.yml
 name: Reusable Dotnet Workflow
 
 on:
@@ -7,27 +6,33 @@ on:
       command:
         required: true
         type: string
-      nugetConfigPath:
-        required: true
-        type: string
-      restoreArguments:
-        required: true
-        type: string
-      verbosityRestore:
-        required: true
-        type: string
-      restoreDirectory:
+      projects:
         required: true
         type: string
       arguments:
         required: false
         type: string
-      testRunTitle:
-        required: false
+      nugetConfigPath:
+        required: true
+        type: string
+      packagesToPack:
+        required: true
         type: string
       configuration:
         required: true
         type: string
+      custom:
+        required: true
+        type: boolean
+      restoreArguments:
+        required: true
+        type: string
+      testRunTitle:
+        required: false
+        type: string
+      modifyOutputPath:
+        required: true
+        type: boolean
       packDirectory:
         required: true
         type: string
@@ -40,14 +45,23 @@ on:
       includesource:
         required: true
         type: boolean
-      verbosityPack:
+      requestTimeout:
+        required: false
+        type: string
+      noCache:
+        required: true
+        type: boolean
+      restoreDirectory:
+        required: true
+        type: string
+      verbosityRestore:
         required: true
         type: string
       sensitiveAlphanumericInfo1:
         required: true
         type: string
-      buildProperties:
-        required: true
+      versioningScheme:
+        required: false
         type: string
       versionEnvVar:
         required: true
@@ -61,6 +75,12 @@ on:
       patchVersion:
         required: true
         type: string
+      buildProperties:
+        required: true
+        type: string
+      verbosityPack:
+        required: true
+        type: string
       workingDirectory:
         required: true
         type: string
@@ -71,6 +91,7 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.workingDirectory }}
+
     env:
       VERSION: ${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}
 
@@ -83,48 +104,37 @@ jobs:
         with:
           dotnet-version: '9.0.201'
 
-      - name: Export version env var
+      - name: Set version env var (optional use)
         shell: bash
-        run: |
-          echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
+        run: echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
 
-      - name: Dotnet restore
-        if: ${{ inputs.command == 'restore' }}
+      - name: Run dotnet ${{ inputs.command }}
         shell: bash
         run: |
-          find . -name '*.csproj' -print0 \
-            | xargs -0 -n1 dotnet restore \
+          if [[ "${{ inputs.command }}" == "restore" ]]; then
+            for proj in $(find . -name "${{ inputs.projects }}" -type f); do
+              dotnet restore "$proj" \
                 --configfile "${{ inputs.nugetConfigPath }}" \
                 ${{ inputs.restoreArguments }} \
-                --no-cache="${{ inputs.noCache }}" \
+                $(if [[ "${{ inputs.noCache }}" == "true" ]]; then echo "--no-cache"; fi) \
                 --packages "${{ inputs.restoreDirectory }}" \
                 --verbosity "${{ inputs.verbosityRestore }}"
+            done
 
-      - name: Dotnet build
-        if: ${{ inputs.command == 'build' }}
-        shell: bash
-        run: |
-          find . -name '*.csproj' -print0 \
-            | xargs -0 -n1 dotnet build --no-restore ${{ inputs.arguments }}
+          elif [[ "${{ inputs.command }}" == "build" ]]; then
+            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
 
-      - name: Dotnet test
-        if: ${{ inputs.command == 'test' }}
-        shell: bash
-        run: |
-          find . -name '*.csproj' -print0 \
-            | xargs -0 -n1 dotnet test --no-build ${{ inputs.arguments }} \
-                --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
+          elif [[ "${{ inputs.command }}" == "test" ]]; then
+            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} \
+              --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
 
-      - name: Dotnet pack
-        if: ${{ inputs.command == 'pack' }}
-        shell: bash
-        run: |
-          find . -name '*.csproj' -print0 \
-            | xargs -0 -n1 dotnet pack --no-restore \
-                --configuration "${{ inputs.configuration }}" \
-                --output "${{ inputs.packDirectory }}" \
-                --no-build="${{ inputs.nobuild }}" \
-                --include-symbols="${{ inputs.includesymbols }}" \
-                --include-source="${{ inputs.includesource }}" \
-                --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
-                --verbosity "${{ inputs.verbosityPack }}"
+          elif [[ "${{ inputs.command }}" == "pack" ]]; then
+            dotnet pack "${{ inputs.packagesToPack }}" \
+              --configuration "${{ inputs.configuration }}" \
+              --output "${{ inputs.packDirectory }}" \
+              --no-build="${{ inputs.nobuild }}" \
+              --include-symbols="${{ inputs.includesymbols }}" \
+              --include-source="${{ inputs.includesource }}" \
+              --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
+              --verbosity "${{ inputs.verbosityPack }}"
+          fi
