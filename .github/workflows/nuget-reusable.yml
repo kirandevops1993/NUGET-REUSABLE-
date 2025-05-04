@@ -7,16 +7,16 @@ on:
         required: true
         type: string
       projects:
-        required: true
+        required: false
         type: string
       arguments:
         required: false
         type: string
       nugetConfigPath:
-        required: true
+        required: false
         type: string
       packagesToPack:
-        required: true
+        required: false
         type: string
       configuration:
         required: true
@@ -25,7 +25,7 @@ on:
         required: true
         type: boolean
       restoreArguments:
-        required: true
+        required: false
         type: string
       testRunTitle:
         required: false
@@ -91,7 +91,7 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.workingDirectory }}
-    
+
     env:
       VERSION: ${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}
 
@@ -104,37 +104,43 @@ jobs:
         with:
           dotnet-version: '9.0.201'
 
-      - name: Set version env var (optional use)
+      - name: Set version env var
         shell: bash
         run: echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
 
-      - name: Run dotnet ${{ inputs.command }}
+      - name: Execute dotnet ${{ inputs.command }}
         shell: bash
         run: |
           if [[ "${{ inputs.command }}" == "restore" ]]; then
-            for proj in $(find $GITHUB_WORKSPACE -name "*.csproj" -type f); do
+            for proj in $(find . -name "*.csproj"); do
               dotnet restore "$proj" \
-                --configfile "${{ inputs.nugetConfigPath }}" \
+                $(if [[ -n "${{ inputs.nugetConfigPath }}" ]]; then echo "--configfile '${{ inputs.nugetConfigPath }}'"; fi) \
                 ${{ inputs.restoreArguments }} \
-                --no-cache="${{ inputs.noCache }}" \
+                $(if [[ "${{ inputs.noCache }}" == "true" ]]; then echo "--no-cache"; fi) \
                 --packages "${{ inputs.restoreDirectory }}" \
                 --verbosity "${{ inputs.verbosityRestore }}"
             done
 
           elif [[ "${{ inputs.command }}" == "build" ]]; then
-            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
+            for proj in $(find . -name "*.csproj"); do
+              dotnet build "$proj" ${{ inputs.arguments }}
+            done
 
           elif [[ "${{ inputs.command }}" == "test" ]]; then
-            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} \
-              --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
+            for proj in $(find . -name "*.csproj"); do
+              dotnet test "$proj" ${{ inputs.arguments }} \
+                --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
+            done
 
           elif [[ "${{ inputs.command }}" == "pack" ]]; then
-            dotnet pack "${{ inputs.packagesToPack }}" \
-              --configuration "${{ inputs.configuration }}" \
-              --output "${{ inputs.packDirectory }}" \
-              --no-build="${{ inputs.nobuild }}" \
-              --include-symbols="${{ inputs.includesymbols }}" \
-              --include-source="${{ inputs.includesource }}" \
-              --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
-              --verbosity "${{ inputs.verbosityPack }}"
+            for proj in $(find . -name "*.csproj"); do
+              dotnet pack "$proj" \
+                --configuration "${{ inputs.configuration }}" \
+                --output "${{ inputs.packDirectory }}" \
+                --no-build="${{ inputs.nobuild }}" \
+                --include-symbols="${{ inputs.includesymbols }}" \
+                --include-source="${{ inputs.includesource }}" \
+                --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
+                --verbosity "${{ inputs.verbosityPack }}"
+            done
           fi
