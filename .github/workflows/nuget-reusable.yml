@@ -113,7 +113,7 @@ jobs:
             dotnet restore "${{ inputs.projects }}" \
               --configfile "${{ inputs.nugetConfigPath }}" \
               ${{ inputs.restoreArguments }} \
-              --no-cache "${{ inputs.noCache }}" \
+              --no-cache="${{ inputs.noCache }}" \
               --packages "${{ inputs.restoreDirectory }}" \
               --verbosity "${{ inputs.verbosityRestore }}"
 
@@ -128,8 +128,8 @@ jobs:
             dotnet pack "${{ inputs.packagesToPack }}" \
               --configuration "${{ inputs.configuration }}" \
               --output "${{ inputs.packDirectory }}" \
-              --no-build "${{ inputs.nobuild }}" \
-              --include-symbols "${{ inputs.includesymbols }}" \
-              --include-source "${{ inputs.includesource }}" \
+              --no-build="${{ inputs.nobuild }}" \
+              --include-symbols="${{ inputs.includesymbols }}" \
+              --include-source="${{ inputs.includesource }}" \
               --property "Version=$VERSION;SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
               --verbosity "${{ inputs.verbosityPack }}"
