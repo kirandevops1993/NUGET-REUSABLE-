@@ -106,8 +106,10 @@ jobs:
 
       - name: Set version env var (optional use)
         run: echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
+        shell: bash
 
       - name: Run dotnet ${{ inputs.command }}
+        shell: bash
         run: |
           if [ "${{ inputs.command }}" = "restore" ]; then
             dotnet restore "${{ inputs.projects }}" \
