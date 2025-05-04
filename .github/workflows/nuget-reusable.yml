@@ -1,172 +1,134 @@
-name: Reusable NuGet Workflow
+name: Reusable Dotnet Workflow
 
 on:
   workflow_call:
     inputs:
-      # Restore Inputs
-      solution:
+      command:
         required: true
+        type: string
+      projects:
+        required: true
+        type: string
+      arguments:
+        required: false
         type: string
       nugetConfigPath:
         required: true
         type: string
-      packagesDirectory:
+      packagesToPack:
         required: true
         type: string
-      verbosity:
+      configuration:
         required: true
         type: string
-      nuGetRestoreArgs:
+      custom:
+        required: true
+        type: boolean
+      restoreArguments:
         required: true
         type: string
-      restoreMode:
+      testRunTitle:
+        required: false
+        type: string
+      modifyOutputPath:
         required: true
+        type: boolean
+      packDirectory:
+        required: true
+        type: string
+      nobuild:
+        required: true
+        type: boolean
+      includesymbols:
+        required: true
+        type: boolean
+      includesource:
+        required: true
+        type: boolean
+      requestTimeout:
+        required: false
         type: string
       noCache:
         required: true
         type: boolean
-      nuGetVersion:
+      restoreDirectory:
         required: true
         type: string
-      nuGetPath:
+      verbosityRestore:
         required: true
         type: string
-
-      # Packager Inputs
-      searchPattern:
+      sensitiveAlphanumericInfo1:
         required: true
         type: string
-      outputdir:
-        required: true
+      versioningScheme:
+        required: false
         type: string
-      includeSymbols:
-        required: true
-        type: boolean
-      versionByBuild:
-        required: true
-        type: boolean
       versionEnvVar:
         required: true
         type: string
       majorVersion:
         required: true
-        type: number
+        type: string
       minorVersion:
         required: true
-        type: number
+        type: string
       patchVersion:
-        required: true
-        type: number
-      configurationToPack:
         required: true
         type: string
       buildProperties:
         required: true
         type: string
-      nuGetAdditionalArgs:
-        required: true
-        type: string
-      packagesToPack:
-        required: false
-        type: string
-      versioningScheme:
-        required: false
-        type: string
-      includeReferencedProjects:
-        required: false
-        type: boolean
-      packTimezone:
-        required: false
-        type: string
-      toolPackage:
-        required: false
-        type: boolean
-      basePath:
-        required: false
-        type: string
       verbosityPack:
-        required: false
-        type: string
-
-      # Publisher Inputs
-      nuGetFeedType:
         required: true
         type: string
-      feedName:
+      workingDirectory:
         required: true
         type: string
-      skipDuplicate:
-        required: true
-        type: boolean
-
-      # Custom Command Inputs
-      arguments:
-        required: false
-        type: string
-
-      # General Command
-      command:
-        required: true
-        type: string
-
-    secrets:
-      apiKey:
-        required: true
 
 jobs:
-  nuget-tasks:
+  dotnet:
     runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.workingDirectory }}
+
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Download NuGet CLI
-        run: |
-          Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe" -OutFile nuget.exe
-        shell: powershell
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.201'
 
-      - name: Restore NuGet Packages (.sln)
-        if: inputs.command == 'restore'
+      - name: Set version variable
         run: |
-          ./nuget.exe restore "${{ inputs.solution }}" `
-            -ConfigFile "${{ inputs.nugetConfigPath }}" `
-            -PackagesDirectory "${{ inputs.packagesDirectory }}" `
-            -Verbosity ${{ inputs.verbosity }} `
-            -NonInteractive
-        shell: powershell
-        
-      - name: Dotnet Restore (for pack)
-        if: inputs.command == 'pack'
-        run: dotnet restore ${{ inputs.searchPattern }} --configfile "${{ inputs.nugetConfigPath }}"
+          VERSION="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}"
+          echo "${{ inputs.versionEnvVar }}=$VERSION" >> $GITHUB_ENV
 
-      - name: Locate MSBuild Path
-        id: msbuild-path
+      - name: Run dotnet ${{ inputs.command }}
         run: |
-          $msbuildPath = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe"
-          if (!(Test-Path $msbuildPath)) {
-            Write-Error "MSBuild.exe not found at $msbuildPath"
-            exit 1
-          }
-          echo "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
-        shell: powershell
+          if [ "${{ inputs.command }}" = "restore" ]; then
+            dotnet restore "${{ inputs.projects }}" \
+              --configfile "${{ inputs.nugetConfigPath }}" \
+              ${{ inputs.restoreArguments }} \
+              --no-cache "${{ inputs.noCache }}" \
+              --packages "${{ inputs.restoreDirectory }}" \
+              --verbosity "${{ inputs.verbosityRestore }}"
 
-      - name: Build the Project
-        if: inputs.command == 'pack'
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" "${{ inputs.searchPattern }}" `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:${{ inputs.buildProperties }} `
-            /verbosity:${{ inputs.verbosity }}
-        shell: powershell
+          elif [ "${{ inputs.command }}" = "build" ]; then
+            dotnet build "${{ inputs.projects }}" ${{ inputs.arguments }}
 
-      - name: Pack NuGet Packages using MSBuild
-        if: inputs.command == 'pack'
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" "${{ inputs.searchPattern }}" `
-            /t:Pack `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:PackageOutputPath="${{ inputs.outputdir }}" `
-            /p:IncludeSymbols=${{ inputs.includeSymbols }} `
-            /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-            /p:${{ inputs.buildProperties }}
-        shell: powershell
+          elif [ "${{ inputs.command }}" = "test" ]; then
+            dotnet test "${{ inputs.projects }}" ${{ inputs.arguments }} \
+              --logger "trx;LogFileName=${{ inputs.testRunTitle }}.trx"
+
+          elif [ "${{ inputs.command }}" = "pack" ]; then
+            dotnet pack "${{ inputs.packagesToPack }}" \
+              --configuration "${{ inputs.configuration }}" \
+              --output "${{ inputs.packDirectory }}" \
+              --no-build "${{ inputs.nobuild }}" \
+              --include-symbols "${{ inputs.includesymbols }}" \
+              --include-source "${{ inputs.includesource }}" \
+              --property "Version=${{ env.${{ inputs.versionEnvVar }} }};SensitiveAlphanumericInfo3=${{ inputs.sensitiveAlphanumericInfo1 }};${{ inputs.buildProperties }}" \
+              --verbosity "${{ inputs.verbosityPack }}"
