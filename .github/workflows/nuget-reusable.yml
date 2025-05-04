@@ -91,7 +91,7 @@ jobs:
     defaults:
       run:
         working-directory: ${{ inputs.workingDirectory }}
-
+    
     env:
       VERSION: ${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}
 
@@ -112,11 +112,11 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ inputs.command }}" == "restore" ]]; then
-            for proj in $(find . -name "${{ inputs.projects }}" -type f); do
+            for proj in $(find $GITHUB_WORKSPACE -name "*.csproj" -type f); do
               dotnet restore "$proj" \
                 --configfile "${{ inputs.nugetConfigPath }}" \
                 ${{ inputs.restoreArguments }} \
-                $(if [[ "${{ inputs.noCache }}" == "true" ]]; then echo "--no-cache"; fi) \
+                --no-cache="${{ inputs.noCache }}" \
                 --packages "${{ inputs.restoreDirectory }}" \
                 --verbosity "${{ inputs.verbosityRestore }}"
             done
