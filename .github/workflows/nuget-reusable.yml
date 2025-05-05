@@ -67,21 +67,6 @@ on:
         required: true
         type: string
 
-      # Publisher Inputs
-      nuGetFeedType:
-        required: true
-        type: string
-      feedName:
-        required: true
-        type: string
-      skipDuplicate:
-        required: true
-        type: boolean
-
-    secrets:
-      apiKey:
-        required: true
-
 jobs:
   nuget-tasks:
     runs-on: windows-latest
