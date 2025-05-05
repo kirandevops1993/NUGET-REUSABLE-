@@ -74,6 +74,12 @@ on:
       feedName:
         required: true
         type: string
+      skipDuplicate:
+        required: true
+        type: boolean
+      apiKey:
+        required: true
+        type: secret
 
 jobs:
   nuget-tasks:
@@ -126,4 +132,12 @@ jobs:
             /p:IncludeSymbols=${{ inputs.includeSymbols }} `
             /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
             /p:${{ inputs.buildProperties }}
+        shell: powershell
+
+      - name: Push NuGet Package
+        run: |
+          ./nuget.exe push "${{ inputs.outputdir }}/*.nupkg" `
+            -Source "${{ inputs.feedName }}" `
+            -ApiKey "${{ inputs.apiKey }}" `
+            -SkipDuplicate:${{ inputs.skipDuplicate }}
         shell: powershell
