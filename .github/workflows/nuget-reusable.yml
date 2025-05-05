@@ -67,6 +67,14 @@ on:
         required: true
         type: string
 
+      # New Required Inputs
+      nuGetFeedType:
+        required: true
+        type: string
+      feedName:
+        required: true
+        type: string
+
 jobs:
   nuget-tasks:
     runs-on: windows-latest
@@ -91,7 +99,7 @@ jobs:
       - name: Locate MSBuild Path
         id: msbuild-path
         run: |
-          $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
+          $msbuildPath = "C:Program FilesMicrosoft Visual Studio2022EnterpriseMSBuildCurrentBinMSBuild.exe"
           if (!(Test-Path $msbuildPath)) {
             Write-Error "MSBuild.exe not found at $msbuildPath"
             exit 1
