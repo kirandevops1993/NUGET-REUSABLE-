@@ -5,10 +5,10 @@ on:
     inputs:
       # Restore Inputs
       solution:
-        required: false
+        required: true
         type: string
       nugetConfigPath:
-        required: false
+        required: true
         type: string
       packagesDirectory:
         required: true
