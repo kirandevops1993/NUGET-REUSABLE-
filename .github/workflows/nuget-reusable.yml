@@ -17,7 +17,7 @@ on:
         required: true
         type: string
       nuGetRestoreArgs:
-        required: true
+        required: false
         type: string
       restoreMode:
         required: true
