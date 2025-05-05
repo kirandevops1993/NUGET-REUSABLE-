@@ -79,7 +79,7 @@ on:
         type: boolean
       apiKey:
         required: true
-        type: secret
+        type: secret # Ensure this is defined as a secret
 
 jobs:
   nuget-tasks:
