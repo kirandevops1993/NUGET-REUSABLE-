@@ -1,98 +1,121 @@
-name: Reusable NuGet Workflow
+name: NuGet Reusable Workflow
 
 on:
   workflow_call:
     inputs:
-      # Restore Inputs
       solution:
-        required: false
+        required: true
         type: string
       nugetConfigPath:
-        required: false
+        required: true
         type: string
       packagesDirectory:
-        required: true
+        required: false
         type: string
+        default: ""
       verbosity:
-        required: true
+        required: false
         type: string
+        default: "detailed"
       nuGetRestoreArgs:
         required: false
         type: string
+        default: ""
       restoreMode:
-        required: true
+        required: false
         type: string
+        default: "restore"
       noCache:
-        required: true
+        required: false
         type: boolean
+        default: false
       nuGetVersion:
-        required: true
+        required: false
         type: string
+        default: "5.9.0"
       nuGetPath:
-        required: true
+        required: false
         type: string
-
-      # Packager Inputs
+        default: ""
       searchPattern:
-        required: true
+        required: false
         type: string
+        default: "*.csproj"
       outputdir:
-        required: true
+        required: false
         type: string
+        default: ""
       includeSymbols:
-        required: true
+        required: false
         type: boolean
+        default: false
       versionByBuild:
-        required: true
+        required: false
         type: boolean
+        default: false
       versionEnvVar:
-        required: true
+        required: false
         type: string
+        default: ""
       majorVersion:
-        required: true
+        required: false
         type: number
+        default: 1
       minorVersion:
-        required: true
+        required: false
         type: number
+        default: 0
       patchVersion:
-        required: true
+        required: false
         type: number
+        default: 0
       configurationToPack:
-        required: true
+        required: false
         type: string
+        default: "Release"
       buildProperties:
-        required: true
+        required: false
         type: string
+        default: ""
       nuGetAdditionalArgs:
-        required: true
+        required: false
         type: string
-
-      # Publisher Inputs
+        default: ""
       nuGetFeedType:
-        required: true
+        required: false
         type: string
+        default: "AzureArtifacts"
       feedName:
-        required: true
+        required: false
         type: string
+        default: ""
       skipDuplicate:
-        required: true
+        required: false
         type: boolean
-
+        default: false
     secrets:
       apiKey:
         required: true
 
 jobs:
-  nuget-tasks:
+  nuget-restore:
     runs-on: windows-latest
     steps:
-      - name: Checkout source
+      - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Download NuGet CLI
+      - name: Validate nuget.config Path
         run: |
-          Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe" -OutFile nuget.exe
-        shell: powershell
+          if (!(Test-Path "${{ inputs.nugetConfigPath }}")) {
+            Write-Error "nuget.config file not found at path: ${{ inputs.nugetConfigPath }}"
+            exit 1
+          }
+
+      - name: Download NuGet
+        run: |
+          if (!(Test-Path "${{ inputs.nuGetPath }}")) {
+            Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/v${{ inputs.nuGetVersion }}/nuget.exe" -OutFile "${{ inputs.nuGetPath }}"
+          }
 
       - name: Restore NuGet Packages
         run: |
@@ -100,37 +123,5 @@ jobs:
             -ConfigFile "${{ inputs.nugetConfigPath }}" `
             -PackagesDirectory "${{ inputs.packagesDirectory }}" `
             -Verbosity ${{ inputs.verbosity }} `
-            -NonInteractive
-        shell: powershell
-
-      - name: Locate MSBuild Path
-        id: msbuild-path
-        run: |
-          $msbuildPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Current\Bin\MSBuild.exe"
-          if (!(Test-Path $msbuildPath)) {
-            Write-Error "MSBuild.exe not found at $msbuildPath"
-            exit 1
-          }
-          echo "msbuildPath=$msbuildPath" >> $env:GITHUB_OUTPUT
-        shell: powershell
-
-      - name: Build the Project
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:${{ inputs.buildProperties }} `
-            /verbosity:${{ inputs.verbosity }}
-        shell: powershell
-
-      - name: Pack NuGet Packages using MSBuild
-        run: |
-          & "${{ steps.msbuild-path.outputs.msbuildPath }}" `
-            "${{ inputs.searchPattern }}" `
-            /t:Pack `
-            /p:Configuration=${{ inputs.configurationToPack }} `
-            /p:PackageOutputPath="${{ inputs.outputdir }}" `
-            /p:IncludeSymbols=${{ inputs.includeSymbols }} `
-            /p:Version="${{ inputs.majorVersion }}.${{ inputs.minorVersion }}.${{ inputs.patchVersion }}" `
-            /p:${{ inputs.buildProperties }}
-        shell: powershell
+            -NonInteractive `
+            ${{ inputs.nuGetRestoreArgs }}
